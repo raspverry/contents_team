@@ -18,25 +18,15 @@
 | 4 | 릴스 기획자 | 주간 릴스 캘린더 수립 | 1, 2, 3 |
 | 5 | 스레드 기획자 | 주간 스레드 캘린더 수립 (21개) | 1, 2, 3 |
 
-**실행 예시 (Claude Code):**
+**실행 방법:**
+
+```bash
+# GUI: Streamlit에서 "주간 기획" 워크플로우 실행
+# API:
+curl -X POST http://127.0.0.1:8000/api/workflows/weekly-planning/run
 ```
-# 1단계: 분석팀 3개 에이전트 병렬 실행
-Task(subagent_type="general-purpose",
-     prompt="트렌드 헌터로서 주간 트렌드 리포트를 작성하세요. [트렌드 헌터 프롬프트 참조]")
 
-Task(subagent_type="general-purpose",
-     prompt="벤치마킹 분석가로서 주간 리포트를 작성하세요. [벤치마킹 분석가 프롬프트 참조]")
-
-Task(subagent_type="general-purpose",
-     prompt="성과 분석가로서 주간 리포트를 작성하세요. [성과 분석가 프롬프트 참조]")
-
-# 2단계: 기획자 2개 에이전트 병렬 실행 (분석 결과 참조)
-Task(subagent_type="general-purpose",
-     prompt="릴스 기획자로서, 분석팀 리포트를 참고하여 주간 릴스 캘린더를 수립하세요.")
-
-Task(subagent_type="general-purpose",
-     prompt="스레드 기획자로서, 분석팀 리포트를 참고하여 주간 스레드 캘린더(21개)를 수립하세요.")
-```
+> 분석팀 3개 에이전트가 병렬 실행된 후, 결과를 참조하여 기획자 2명이 병렬 실행됩니다.
 
 ---
 
@@ -47,6 +37,11 @@ Task(subagent_type="general-purpose",
 |------|---------|------|
 | 1 | 스레드 작가 | 당일 스레드 3개 작성 (아침/점심/저녁) |
 
+```bash
+# 오늘의 스레드 3개 일괄 생성
+curl -X POST http://127.0.0.1:8000/api/workflows/daily-threads/run
+```
+
 #### 화/수/목 중 2~3회 (릴스)
 | 순서 | 에이전트 | 작업 | 의존성 |
 |------|---------|------|--------|
@@ -56,10 +51,19 @@ Task(subagent_type="general-purpose",
 
 **참고:** 2, 3번은 대본 완성 후 병렬 실행 가능
 
+```bash
+# 릴스 풀세트 (대본 → 캡션 + 편집가이드 병렬)
+curl -X POST http://127.0.0.1:8000/api/workflows/reels-fullset/run
+```
+
 #### 매일 실행 (팬딩)
 | 순서 | 에이전트 | 작업 |
 |------|---------|------|
 | 1 | 데일리 브리퍼 | 오전 데일리 브리핑 작성 |
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/workflows/daily-briefing/run
+```
 
 ---
 
@@ -71,6 +75,14 @@ Task(subagent_type="general-purpose",
 | 2 | ETF 리서처 | 주간 ETF 모니터링 리포트 |
 | 3 | 트렌드 헌터 | 금요일 트렌드 업데이트 |
 | 4 | 대표 (스크루지) | 금주 결과물 최종 리뷰 |
+
+```bash
+# 주간 컬럼
+curl -X POST http://127.0.0.1:8000/api/workflows/weekly-column/run
+
+# ETF 리포트
+curl -X POST http://127.0.0.1:8000/api/workflows/etf-report/run
+```
 
 ---
 
@@ -91,13 +103,20 @@ Task(subagent_type="general-purpose",
 | 멤버십 전략가 | 월간 멤버십 전략 리포트 |
 | 성과 분석가 | 월간 대시보드 발행 |
 
+```bash
+# 개별 에이전트 실행 (아직 워크플로우 프리셋 없음)
+curl -X POST http://127.0.0.1:8000/api/agents/brand-strategist/run \
+  -H "Content-Type: application/json" \
+  -d '{"user_message": "이번 달 브랜드 전략 리뷰를 작성해주세요."}'
+```
+
 ---
 
 ## 에이전트 간 데이터 흐름
 
 ```
 [트렌드 헌터] ──→ [릴스 기획자] ──→ [릴스 대본 작가] ──→ [캡션&DM 작가]
-     │                                    │                     │
+     │                                    │
      │                                    └──→ [영상 편집 가이드]
      │
      └──→ [스레드 기획자] ──→ [스레드 작가]
@@ -119,21 +138,24 @@ Task(subagent_type="general-purpose",
 
 ## 산출물 저장 규칙
 
+파일명 형식: `YYYY-MM-DD-{agent_id}-{HHMMSSffffff}.md` (시스템 자동 생성)
+
 ```
 outputs/
-├── reels/
-│   └── YYYY-MM-DD-릴스제목.md
-├── threads/
-│   └── YYYY-MM-DD-threads.md     (일일 3개 묶음)
-├── fanding/
-│   ├── YYYY-MM-DD-daily-briefing.md
-│   ├── YYYY-MM-DD-weekly-column.md
-│   └── YYYY-MM-DD-etf-report.md
-├── analysis/
-│   ├── YYYY-MM-DD-trend-report.md
-│   ├── YYYY-MM-DD-benchmark-report.md
-│   └── YYYY-MM-DD-performance-report.md
-└── branding/
-    ├── YYYY-MM-brand-strategy.md
-    └── YYYY-MM-positioning.md
+├── reels/       # 릴스 대본, 캡션, 편집가이드
+├── threads/     # 스레드 글, 캘린더
+├── fanding/     # 컬럼, 브리핑, ETF 리포트
+├── analysis/    # 트렌드/벤치마킹/성과 리포트
+└── branding/    # 브랜드 전략, 포지셔닝 리포트
 ```
+
+## 프리셋 워크플로우 목록
+
+| ID | 이름 | 에이전트 | 실행 패턴 |
+|----|------|---------|----------|
+| `weekly-planning` | 주간 기획 | 분석팀 3명 → 기획자 2명 | 병렬 → 병렬 |
+| `daily-threads` | 오늘의 스레드 | 스레드 작가 x3 | 병렬 |
+| `reels-fullset` | 릴스 풀세트 | 대본 → 캡션 + 편집가이드 | 순차 → 병렬 |
+| `daily-briefing` | 데일리 브리핑 | 데일리 브리퍼 | 단독 |
+| `weekly-column` | 주간 컬럼 | 주간 컬럼니스트 | 단독 |
+| `etf-report` | ETF 리포트 | ETF 리서처 | 단독 |

@@ -1,105 +1,130 @@
-# CLAUDE.md — AI 콘텐츠 팀 가이드 (재테크는 스크루지)
+# CLAUDE.md — AI Assistant Guide
 
-## 프로젝트 개요
+## Project Overview
 
-**"재테크는 스크루지"** 브랜드의 AI 콘텐츠 팀 운영 시스템입니다.
-15명의 AI 에이전트가 5개 팀으로 나뉘어 인스타그램 릴스, 스레드, 팬딩 멤버십 콘텐츠를 기획하고 제작합니다.
+**재테크는 스크루지** — 15명의 AI 에이전트가 콘텐츠를 생산하는 1인 회사 운영 시스템.
 
-## 조직 구조
+- 백엔드: FastAPI
+- GUI: Streamlit (MVP, 향후 Next.js로 전환)
+- 패키지 매니저: uv
+- AI: Anthropic Claude API
 
-```
-대표: 재테크는 스크루지 (전체 방향 지시 & 최종 승인)
-│
-├── 🎯 팀1. 브랜딩 전략팀 (2명)
-│   ├── 브랜드 전략가       — 브랜드 방향성, 톤앤매너 수립 (월 1~2회)
-│   └── 포지셔닝 분석가     — 시장 내 스크루지 포지셔닝 분석 (월 1회)
-│
-├── 🔍 팀2. 콘텐츠 분석팀 (3명)
-│   ├── 트렌드 헌터         — SNS 트렌드 & 바이럴 분석 (주 2~3회)
-│   ├── 벤치마킹 분석가     — 14개 계정 모니터링 (주 1회)
-│   └── 성과 분석가         — 콘텐츠 성과 데이터 분석 (주 1회)
-│
-├── 🎬 팀3. 인스타 릴스 제작팀 (4명)
-│   ├── 릴스 기획자         — 주제 선정, 주간 캘린더 (주 1회)
-│   ├── 릴스 대본 작가      — 20~30초 대본 작성 (주 2~3회)
-│   ├── 캡션 & DM 작가     — 캡션 + DM 자료 제작 (주 2~3회)
-│   └── 영상 편집 가이드    — 컷/자막/BGM/썸네일 가이드 (주 2~3회)
-│
-├── 🧵 팀4. 스레드 콘텐츠팀 (2명)
-│   ├── 스레드 기획자       — 주간 캘린더 21개/주 (주 1회)
-│   └── 스레드 작가         — 10줄 이내 글 작성 (매일 3개)
-│
-└── 🎙 팀5. 팬딩 멤버십팀 (4명)
-    ├── 멤버십 전략가       — 운영 전략, 유입/이탈 관리 (월 1~2회)
-    ├── 주간 컬럼니스트     — A4 4~5p 프리미엄 컬럼 (주 1회)
-    ├── 데일리 브리퍼       — 뉴스 요약 브리핑 (매일)
-    └── ETF 리서처          — ETF 모니터링 & 비교 분석 (주 1~2회)
-```
-
-상세 조직도: `contents/company/ai-team-org.md`
-
-## 디렉토리 구조
+## Repository Structure
 
 ```
 contents_team/
-├── CLAUDE.md                              # 이 파일 — AI 어시스턴트 가이드
-├── contents/
-│   └── company/
-│       └── ai-team-org.md                 # AI 팀 조직도 상세
-├── agents/                                # 에이전트 프롬프트 정의
-│   ├── team1-branding/                    # 🎯 브랜딩 전략팀
-│   │   ├── brand-strategist.md
-│   │   └── positioning-analyst.md
-│   ├── team2-analysis/                    # 🔍 콘텐츠 분석팀
-│   │   ├── trend-hunter.md
-│   │   ├── benchmarking-analyst.md
-│   │   └── performance-analyst.md
-│   ├── team3-reels/                       # 🎬 인스타 릴스 제작팀
-│   │   ├── reels-planner.md
-│   │   ├── reels-scriptwriter.md
-│   │   ├── caption-dm-writer.md
-│   │   └── video-editing-guide.md
-│   ├── team4-threads/                     # 🧵 스레드 콘텐츠팀
-│   │   ├── threads-planner.md
-│   │   └── threads-writer.md
-│   └── team5-fanding/                     # 🎙 팬딩 멤버십팀
-│       ├── membership-strategist.md
-│       ├── weekly-columnist.md
-│       ├── daily-briefer.md
-│       └── etf-researcher.md
-├── workflows/                             # 운영 워크플로우
-│   ├── weekly-content-calendar.md         # 주간 운영 사이클
-│   └── daily-routine.md                   # 일일 루틴 & 실행 가이드
-└── outputs/                               # 산출물 저장소
-    ├── reels/                             # 릴스 대본, 캡션, 편집가이드
-    ├── threads/                           # 스레드 글, 캘린더
-    ├── fanding/                           # 컬럼, 브리핑, ETF 리포트
-    ├── analysis/                          # 트렌드/벤치마킹/성과 리포트
-    └── branding/                          # 브랜드 전략, 포지셔닝 리포트
+├── agents/                      # 에이전트 프롬프트 (마크다운)
+│   ├── team1-branding/          #   브랜딩 전략팀 (2명)
+│   ├── team2-analysis/          #   콘텐츠 분석팀 (3명)
+│   ├── team3-reels/             #   릴스 제작팀 (4명)
+│   ├── team4-threads/           #   스레드 콘텐츠팀 (2명)
+│   └── team5-fanding/           #   팬딩 멤버십팀 (4명)
+├── src/
+│   ├── core/
+│   │   ├── config.py            # Settings (pydantic-settings), 경로 상수
+│   │   ├── models.py            # 도메인 모델: TeamType, AgentInfo, Workflow 등
+│   │   └── clients.py           # Anthropic AsyncAnthropic 싱글턴
+│   ├── services/
+│   │   ├── agent_service.py     # 에이전트 로딩(캐시) + 실행
+│   │   ├── workflow_service.py  # 워크플로우 프리셋(팩토리) + 실행 엔진
+│   │   ├── output_service.py    # 산출물 조회 (storage 위임)
+│   │   └── storage.py           # StorageBackend ABC → FileStorage
+│   ├── api/
+│   │   ├── server.py            # uvicorn 진입점
+│   │   ├── routes.py            # FastAPI 라우트 (얇은 레이어)
+│   │   └── schemas.py           # Pydantic 요청/응답 스키마
+│   └── gui/
+│       └── app.py               # Streamlit GUI
+├── workflows/                   # 워크플로우 가이드 문서
+├── outputs/                     # 생성된 산출물 (gitignored)
+├── pyproject.toml               # uv 프로젝트 설정
+├── .env / .env.example          # 환경 변수
+└── main.py                      # 안내 메시지 출력
 ```
 
-## 에이전트 실행 방법
+## Development Setup
 
-### 기본 원칙
-- 각 에이전트의 `agents/` 디렉토리 내 `.md` 파일에 시스템 프롬프트가 정의되어 있음
-- Claude Code의 **Task tool** (`subagent_type="general-purpose"`)을 사용하여 에이전트를 실행
-- 독립적인 에이전트는 **병렬 실행**으로 효율 극대화
-- 의존성이 있는 에이전트는 **순차 실행** (예: 기획 → 대본 → 캡션)
+```bash
+# 의존성 설치
+uv sync
 
-### 빠른 실행 가이드
+# 환경 변수
+cp .env.example .env
+# ANTHROPIC_API_KEY 설정 필수
+```
 
-| 명령 | 실행 에이전트 | 설명 |
-|------|-------------|------|
-| "주간 캘린더 세워줘" | 분석팀 → 릴스 기획자 + 스레드 기획자 | 분석 후 병렬 기획 |
-| "오늘 스레드 3개 써줘" | 스레드 작가 ×3 | 아침/점심/저녁 병렬 작성 |
-| "릴스 대본 써줘" | 릴스 대본 작가 | 캘린더 참조하여 대본 작성 |
-| "릴스 풀세트 만들어줘" | 대본→캡션+편집가이드 | 순차+병렬 |
-| "데일리 브리핑 써줘" | 데일리 브리퍼 | 오늘 경제 뉴스 요약 |
-| "주간 컬럼 써줘" | 주간 컬럼니스트 | A4 4~5p 프리미엄 컬럼 |
-| "ETF 리포트 써줘" | ETF 리서처 | 주간 ETF 모니터링 |
-| "트렌드 분석해줘" | 트렌드 헌터 | SNS 트렌드 수집/분석 |
+## Commands
 
-## 톤앤매너 규칙
+| Action | Command |
+|--------|---------|
+| 의존성 설치 | `uv sync` |
+| API 서버 | `uv run api` |
+| GUI | `uv run streamlit run src/gui/app.py` |
+| API 문서 | http://127.0.0.1:8000/docs |
+
+테스트/린터는 아직 미설정.
+
+## Architecture: Layered Design
+
+```
+API Routes (src/api/routes.py)
+    ↓ 얇은 라우트: 입력 검증 → 서비스 호출 → 스키마 반환
+Services (src/services/)
+    ↓ 비즈니스 로직: 에이전트 로딩, 워크플로우 실행, 산출물 관리
+Core (src/core/)
+    ↓ 도메인 모델, 설정, API 클라이언트
+Storage (src/services/storage.py)
+    ↓ ABC 기반 추상화: FileStorage → 향후 DB/S3
+```
+
+### Key Patterns
+
+- **팀 메타데이터 단일 소스**: `models.py`의 `TeamType` enum + `TEAM_META` dict
+- **에이전트 캐시**: `agent_service._agent_cache` — 첫 로드 후 재사용, `force_reload`로 갱신
+- **워크플로우 팩토리**: `workflow_service.PRESET_FACTORIES` — `date.today()`가 실행 시점에 평가되도록 팩토리 함수 사용
+- **워크플로우 실행**: DAG 기반 의존성 해결, `asyncio.gather`로 병렬 실행, step index 추적 (동일 에이전트 복수 실행 안전)
+- **스토리지 추상화**: `StorageBackend` ABC → `FileStorage` (SaaS 전환 시 교체)
+- **파일명**: `YYYY-MM-DD-{agent_id}-{HHMMSSffffff}[-suffix].md` (마이크로초 포함, 중복 방지)
+- **경로 보안**: `FileStorage.load()`에서 path traversal 방지
+
+### API Endpoints
+
+| Method | Path | 설명 |
+|--------|------|------|
+| GET | `/api/status` | 시스템 상태 |
+| GET | `/api/agents` | 에이전트 목록 |
+| GET | `/api/agents/{id}` | 에이전트 상세 |
+| POST | `/api/agents/{id}/run` | 에이전트 실행 |
+| GET | `/api/workflows` | 워크플로우 목록 |
+| POST | `/api/workflows/{id}/run` | 워크플로우 실행 |
+| GET | `/api/outputs` | 산출물 목록 |
+| GET | `/api/outputs/{team}/{filename}` | 산출물 내용 |
+
+## Agent Prompt Format
+
+`agents/` 디렉토리의 마크다운 파일을 런타임에 파싱:
+
+- **H1**: 에이전트 이름 (한글명 추출)
+- **테이블**: `**역할**`, `**실행 빈도**` 행에서 메타데이터 추출
+- **`## 시스템 프롬프트`** 섹션의 코드블록: 시스템 프롬프트로 사용
+- 파일 stem → agent ID (예: `trend-hunter.md` → `trend-hunter`)
+
+## Code Conventions
+
+- 레이어 분리 준수: routes는 서비스만 호출, 서비스는 core/storage만 사용
+- 응답은 항상 `src/api/schemas.py`의 Pydantic 모델 사용
+- 새 에이전트 추가: `agents/{team}/` 에 마크다운 파일 추가하면 자동 로딩
+- 새 워크플로우 추가: `workflow_service.py`에 팩토리 함수 + `PRESET_FACTORIES`에 등록
+- `from __future__ import annotations` 모든 모듈에 포함
+
+## Git Workflow
+
+- **Default branch**: `main`
+- Feature branches: `feature/`, `fix/` 접두사
+- 커밋 메시지: 변경 이유 중심, 간결하게
+- `.env`, 시크릿 커밋 금지
+
+## Tone & Manner Rules
 
 | 채널 | 톤 | 예시 |
 |------|-----|------|
@@ -108,40 +133,14 @@ contents_team/
 | **팬딩 컬럼** | 존댓말 + 전문가 | "이번 주 CPI 데이터의 핵심을 짚어드리겠습니다." |
 | **팬딩 브리핑** | 존댓말 + 친근 | "오늘 시장, 한 줄로 정리해드릴게요." |
 
-## 산출물 파일명 규칙
+## AI Assistant Guidelines
 
-```
-outputs/{팀폴더}/{YYYY-MM-DD}-{유형}.md
-
-예시:
-outputs/threads/2026-02-16-threads.md
-outputs/reels/2026-02-16-script.md
-outputs/fanding/2026-02-16-daily-briefing.md
-outputs/analysis/2026-02-16-trend-report.md
-outputs/branding/2026-02-brand-strategy.md
-```
-
-## 워크플로우
-
-상세 워크플로우는 아래 파일 참조:
-- **주간 사이클**: `workflows/weekly-content-calendar.md`
-- **일일 루틴**: `workflows/daily-routine.md`
-
-### 주간 사이클 요약
-```
-월: 분석팀 리포트 → 기획자 캘린더 수립
-화~목: 스레드 매일 3개 + 릴스 제작 + 데일리 브리핑
-금: 주간 컬럼 + ETF 리포트 + 리뷰
-```
-
-## AI 어시스턴트 가이드라인
-
-1. **에이전트 프롬프트 준수** — `agents/` 디렉토리의 시스템 프롬프트를 충실히 따를 것
-2. **파일명 규칙 준수** — `YYYY-MM-DD-유형.md` 형식을 반드시 지킬 것
-3. **의존성 순서 준수** — 분석 → 기획 → 제작 순서를 지킬 것
-4. **톤앤매너 구분** — 채널별 톤을 절대 혼동하지 말 것
-5. **병렬 실행 활용** — 독립적인 작업은 병렬로 실행하여 효율 극대화
-6. **산출물 저장** — 모든 결과물을 `outputs/` 하위 적절한 폴더에 저장
-7. **대표 리뷰** — 최종 퍼블리싱 전 대표(스크루지)의 확인 필요
-8. **투자 면책** — 팬딩 콘텐츠에는 반드시 "투자의 책임은 본인에게 있습니다" 면책 문구 포함
-9. **팩트 체크** — 수치/데이터 인용 시 출처를 명시하고 정확성을 확인
+1. **Read before editing** — 파일 수정 전 반드시 읽기
+2. **Minimal changes** — 요청된 변경만 수행
+3. **No over-engineering** — 추측성 기능 추가 금지
+4. **Layer separation** — 라우트에서 직접 로직 작성 금지, 서비스 레이어 사용
+5. **Security** — path traversal, 인젝션 등 OWASP Top 10 주의
+6. **Update docs** — 구조 변경 시 이 파일 업데이트
+7. **톤앤매너 구분** — 채널별 톤을 절대 혼동하지 말 것
+8. **투자 면책** — 팬딩 콘텐츠에는 반드시 면책 문구 포함
+9. **팩트 체크** — 수치/데이터 인용 시 출처 명시
