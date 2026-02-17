@@ -127,6 +127,8 @@ async def run_agent(
             messages=[{"role": "user", "content": user_message}],
         )
 
+        if not response.content or not hasattr(response.content[0], "text"):
+            raise ValueError("API 응답에 텍스트 콘텐츠가 없습니다")
         content = response.content[0].text
         tokens = response.usage.input_tokens + response.usage.output_tokens
 

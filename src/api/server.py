@@ -1,15 +1,17 @@
 """FastAPI 서버 진입점."""
 
+from __future__ import annotations
+
 import uvicorn
 
-from src.api.routes import app
+from src.core.config import settings
 
 
 def main():
     uvicorn.run(
         "src.api.routes:app",
-        host="127.0.0.1",
-        port=8000,
+        host=settings.api_host,
+        port=settings.api_port,
         reload=True,
     )
 

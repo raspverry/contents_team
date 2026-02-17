@@ -16,7 +16,7 @@ from src.core.models import (
     Workflow,
     WorkflowStep,
 )
-from src.services.agent_service import get_agent, load_all_agents, run_agent
+from src.services.agent_service import load_all_agents, run_agent
 
 
 # ── 워크플로우 프리셋 (팩토리 함수) ─────────────────────────

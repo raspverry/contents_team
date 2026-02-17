@@ -73,6 +73,8 @@ class FileStorage(StorageBackend):
         self, team: str | None = None, date_str: str | None = None
     ) -> list[OutputItem]:
         items: list[OutputItem] = []
+        if not self._base_dir.exists():
+            return items
         for subdir in sorted(self._base_dir.iterdir()):
             if not subdir.is_dir():
                 continue

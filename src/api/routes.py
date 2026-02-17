@@ -21,6 +21,7 @@ from src.api.schemas import (
     WorkflowStepSummary,
     WorkflowSummary,
 )
+from src.core.config import settings
 from src.services import agent_service, output_service, workflow_service
 
 app = FastAPI(
@@ -167,7 +168,7 @@ def get_status():
     outputs = output_service.list_outputs()
     workflows = workflow_service.list_preset_workflows()
     return StatusResponse(
-        brand="재테크는 스크루지",
+        brand=settings.brand_name,
         agents_count=len(agents),
         workflows_count=len(workflows),
         outputs_count=len(outputs),
