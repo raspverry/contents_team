@@ -14,7 +14,7 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
-from src.core.config import BASE_DIR
+from src.core.config import BASE_DIR, settings
 
 
 RENDERING_DIR = BASE_DIR / "rendering"
@@ -131,7 +131,7 @@ async def render_cardnews_video(
 async def render_reels(
     scenes: list[dict],
     output_subdir: str = "reels",
-    brand_name: str = "재테크는 스크루지",
+    brand_name: str = "",
 ) -> RenderResult:
     """릴스 영상(MP4)을 렌더링.
 
@@ -162,7 +162,7 @@ async def render_reels(
     props = json.dumps({
         "scenes": scenes,
         "theme": theme,
-        "brandName": brand_name,
+        "brandName": brand_name or settings.brand_name,
     })
 
     return await _run_remotion_render(

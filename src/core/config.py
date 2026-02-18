@@ -23,6 +23,7 @@ class Settings(BaseSettings):
 
     # 브랜드 설정
     brand_name: str = "재테크는 스크루지"
+    brand_handle: str = "@재테크는스크루지"
 
     # 서버 설정
     api_host: str = "127.0.0.1"

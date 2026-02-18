@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 # ── 요청 ─────────────────────────────────────────────────────
@@ -100,7 +100,7 @@ class RenderCardNewsRequest(BaseModel):
 
 class RenderReelsRequest(BaseModel):
     scenes: list[dict]
-    brand_name: str = "재테크는 스크루지"
+    brand_name: str = ""
 
 
 class RenderResultResponse(BaseModel):
