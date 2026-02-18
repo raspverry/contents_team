@@ -19,7 +19,12 @@ from src.core.models import (
     WorkflowExecution,
     WorkflowStep,
 )
+from src.core.config import settings
 from src.services.agent_service import load_all_agents, run_agent
+
+
+def _topic() -> str:
+    return settings.brand_topic
 
 
 # ── 실행 이력 ────────────────────────────────────────────────
@@ -49,11 +54,11 @@ def preset_weekly_planning() -> Workflow:
         steps=[
             WorkflowStep(
                 agent_id="trend-hunter",
-                message_template="이번 주 SNS 재테크 트렌드를 분석해주세요. 바이럴 콘텐츠 3~5개를 선정하고, 각각의 성공 요인과 우리 브랜드 적용 아이디어를 제시해주세요.",
+                message_template=f"이번 주 SNS {_topic()} 트렌드를 분석해주세요. 바이럴 콘텐츠 3~5개를 선정하고, 각각의 성공 요인과 우리 브랜드 적용 아이디어를 제시해주세요.",
             ),
             WorkflowStep(
                 agent_id="benchmarking-analyst",
-                message_template="벤치마킹 대상 계정들의 이번 주 콘텐츠를 분석해주세요. 성공 패턴 Top 3와 스크루지에 적용할 포인트를 정리해주세요.",
+                message_template="벤치마킹 대상 계정들의 이번 주 콘텐츠를 분석해주세요. 성공 패턴 Top 3와 우리 브랜드에 적용할 포인트를 정리해주세요.",
             ),
             WorkflowStep(
                 agent_id="performance-analyst",
@@ -82,15 +87,15 @@ def preset_daily_threads() -> Workflow:
         steps=[
             WorkflowStep(
                 agent_id="threads-writer",
-                message_template=f"오늘({today}) 아침 슬롯 스레드를 작성해주세요. 카테고리: 정보형. 재테크 팁이나 지식을 10줄 이내, 반말+친근 톤으로 작성하세요.",
+                message_template=f"오늘({today}) 아침 슬롯 스레드를 작성해주세요. 카테고리: 정보형. {_topic()} 팁이나 지식을 10줄 이내, 반말+친근 톤으로 작성하세요.",
             ),
             WorkflowStep(
                 agent_id="threads-writer",
-                message_template=f"오늘({today}) 점심 슬롯 스레드를 작성해주세요. 카테고리: 공감형. 일상 속 돈 이야기를 10줄 이내, 반말+친근 톤으로 작성하세요.",
+                message_template=f"오늘({today}) 점심 슬롯 스레드를 작성해주세요. 카테고리: 공감형. 일상 속 {_topic()} 이야기를 10줄 이내, 반말+친근 톤으로 작성하세요.",
             ),
             WorkflowStep(
                 agent_id="threads-writer",
-                message_template=f"오늘({today}) 저녁 슬롯 스레드를 작성해주세요. 카테고리: 인사이트형. 깊이 있는 경제/투자 생각을 10줄 이내, 반말+친근 톤으로 작성하세요.",
+                message_template=f"오늘({today}) 저녁 슬롯 스레드를 작성해주세요. 카테고리: 인사이트형. 깊이 있는 {_topic()} 인사이트를 10줄 이내, 반말+친근 톤으로 작성하세요.",
             ),
         ],
     )
@@ -129,7 +134,7 @@ def preset_daily_briefing() -> Workflow:
         steps=[
             WorkflowStep(
                 agent_id="daily-briefer",
-                message_template=f"오늘({today}) 데일리 브리핑을 작성해주세요. 주요 경제 뉴스 3~5개를 투자자 관점에서 요약하고, 오늘의 인사이트를 제시해주세요.",
+                message_template=f"오늘({today}) 데일리 브리핑을 작성해주세요. 주요 뉴스 3~5개를 독자 관점에서 요약하고, 오늘의 인사이트를 제시해주세요.",
             ),
         ],
     )
@@ -171,7 +176,7 @@ def preset_cardnews_pipeline() -> Workflow:
         steps=[
             WorkflowStep(
                 agent_id="cardnews-researcher",
-                message_template="이번 카드뉴스 주제를 리서치하고 기획안을 작성해주세요. 재테크 정보형 주제로, 5~8장 구성, 장별 핵심 내용과 비주얼 제안을 포함해주세요.",
+                message_template=f"이번 카드뉴스 주제를 리서치하고 기획안을 작성해주세요. {_topic()} 정보형 주제로, 5~8장 구성, 장별 핵심 내용과 비주얼 제안을 포함해주세요.",
             ),
             WorkflowStep(
                 agent_id="layout-designer",

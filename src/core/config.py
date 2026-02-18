@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     # 브랜드 설정
     brand_name: str = "재테크는 스크루지"
     brand_handle: str = "@재테크는스크루지"
+    brand_topic: str = "재테크"
+    brand_description: str = "돈에 관한 모든 이야기를 쉽고 재밌게 전달하는 콘텐츠 브랜드"
+    brand_disclaimer: str = "본 콘텐츠는 전문적 조언이 아닙니다. 중요한 결정은 전문가와 상담하세요."
 
     # 서버 설정
     api_host: str = "127.0.0.1"

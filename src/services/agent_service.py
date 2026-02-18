@@ -24,6 +24,20 @@ from src.services.storage import get_storage
 _agent_cache: dict[str, AgentInfo] | None = None
 
 
+def _substitute_brand_vars(text: str) -> str:
+    """프롬프트 내 {{변수}}를 settings 값으로 치환."""
+    replacements = {
+        "{{brand_name}}": settings.brand_name,
+        "{{brand_handle}}": settings.brand_handle,
+        "{{brand_topic}}": settings.brand_topic,
+        "{{brand_description}}": settings.brand_description,
+        "{{brand_disclaimer}}": settings.brand_disclaimer,
+    }
+    for key, val in replacements.items():
+        text = text.replace(key, val)
+    return text
+
+
 def _parse_agent_file(filepath: Path) -> AgentInfo | None:
     """에이전트 마크다운 파일을 파싱하여 AgentInfo 반환."""
     text = filepath.read_text(encoding="utf-8")
@@ -51,7 +65,8 @@ def _parse_agent_file(filepath: Path) -> AgentInfo | None:
     prompt_match = re.search(
         r"## 시스템 프롬프트\s*\n+```\w*\n(.*?)```", text, re.DOTALL
     )
-    system_prompt = prompt_match.group(1).strip() if prompt_match else ""
+    raw_prompt = prompt_match.group(1).strip() if prompt_match else ""
+    system_prompt = _substitute_brand_vars(raw_prompt)
 
     return AgentInfo(
         id=filepath.stem,
