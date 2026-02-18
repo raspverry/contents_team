@@ -110,3 +110,20 @@ class Workflow(BaseModel):
     name: str
     description: str
     steps: list[WorkflowStep]
+
+
+# ── 워크플로우 실행 이력 ──────────────────────────────────────
+
+
+class WorkflowExecution(BaseModel):
+    """워크플로우 실행 이력 레코드."""
+
+    execution_id: str
+    workflow_id: str
+    workflow_name: str
+    status: str = "running"
+    started_at: datetime = Field(default_factory=datetime.now)
+    completed_at: datetime | None = None
+    step_count: int = 0
+    completed_steps: int = 0
+    total_tokens: int = 0

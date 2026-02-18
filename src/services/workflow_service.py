@@ -7,16 +7,31 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import date
+import uuid
+from collections import deque
+from datetime import date, datetime
 from typing import Callable
 
 from src.core.models import (
     AgentRunResult,
     RunStatus,
     Workflow,
+    WorkflowExecution,
     WorkflowStep,
 )
 from src.services.agent_service import load_all_agents, run_agent
+
+
+# ── 실행 이력 ────────────────────────────────────────────────
+
+_execution_history: deque[WorkflowExecution] = deque(maxlen=100)
+
+
+def get_execution_history(*, limit: int = 20) -> list[WorkflowExecution]:
+    """최근 워크플로우 실행 이력을 반환 (최신 순)."""
+    items = list(_execution_history)
+    items.reverse()
+    return items[:limit]
 
 
 # ── 워크플로우 프리셋 (팩토리 함수) ─────────────────────────
@@ -206,7 +221,18 @@ async def execute_workflow(
 
     의존성이 없는 스텝은 병렬 실행, 의존성이 있으면 순차 실행.
     같은 에이전트가 여러 번 등장해도 안전하게 처리 (step index 기반 추적).
+    실행 이력이 자동으로 기록됩니다.
     """
+    # 실행 이력 기록 시작
+    execution = WorkflowExecution(
+        execution_id=uuid.uuid4().hex[:12],
+        workflow_id=workflow.id,
+        workflow_name=workflow.name,
+        status="running",
+        step_count=len(workflow.steps),
+    )
+    _execution_history.append(execution)
+
     agents = load_all_agents()
     # step index 기반 추적 (같은 agent_id가 여러 번 올 수 있으므로)
     step_results: dict[int, AgentRunResult] = {}
@@ -308,5 +334,14 @@ async def execute_workflow(
 
                 if on_step_complete:
                     on_step_complete(batch_result)
+
+    # 실행 이력 기록 완료
+    has_failure = any(r.status == RunStatus.FAILED for r in all_results)
+    execution.status = "completed" if not has_failure else "partial_failure"
+    execution.completed_at = datetime.now()
+    execution.completed_steps = sum(
+        1 for r in all_results if r.status == RunStatus.COMPLETED
+    )
+    execution.total_tokens = sum(r.tokens_used for r in all_results)
 
     return all_results

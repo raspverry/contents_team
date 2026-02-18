@@ -2,6 +2,7 @@ import { Composition, Still } from "remotion";
 import { CardNews, cardNewsSchema } from "./compositions/CardNews";
 import { CardNewsStill, cardNewsStillSchema } from "./compositions/CardNewsStill";
 import { Reels, reelsSchema } from "./compositions/Reels";
+import { DEFAULT_CARDNEWS_THEME, DEFAULT_REELS_THEME } from "./theme";
 
 export const Root: React.FC = () => {
   return (
@@ -13,13 +14,9 @@ export const Root: React.FC = () => {
         schema={cardNewsSchema}
         defaultProps={{
           cards: [],
-          theme: {
-            primary: "#D4AF37",
-            secondary: "#1A1A2E",
-            background: "#FFFFFF",
-            text: "#1A1A2E",
-            accent: "#4ECDC4",
-          },
+          theme: DEFAULT_CARDNEWS_THEME,
+          brandName: "",
+          brandHandle: "",
         }}
         durationInFrames={150}
         fps={30}
@@ -33,18 +30,10 @@ export const Root: React.FC = () => {
         component={CardNewsStill}
         schema={cardNewsStillSchema}
         defaultProps={{
-          card: {
-            page: 1,
-            frame: "cover",
-            blocks: [],
-          },
-          theme: {
-            primary: "#D4AF37",
-            secondary: "#1A1A2E",
-            background: "#FFFFFF",
-            text: "#1A1A2E",
-            accent: "#4ECDC4",
-          },
+          card: { page: 1, frame: "cover", blocks: [] },
+          theme: DEFAULT_CARDNEWS_THEME,
+          brandName: "",
+          brandHandle: "",
         }}
         width={1080}
         height={1350}
@@ -57,14 +46,9 @@ export const Root: React.FC = () => {
         schema={reelsSchema}
         defaultProps={{
           scenes: [],
-          theme: {
-            primary: "#D4AF37",
-            secondary: "#1A1A2E",
-            background: "#0F0F1A",
-            text: "#FFFFFF",
-            accent: "#4ECDC4",
-          },
-          brandName: "재테크는 스크루지",
+          theme: DEFAULT_REELS_THEME,
+          brandName: "",
+          brandHandle: "",
         }}
         durationInFrames={750}
         fps={30}

@@ -5,14 +5,18 @@
 
 from __future__ import annotations
 
+import time
+from collections import defaultdict
 from datetime import date
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 
 from src.api.schemas import (
     AgentDetail,
     AgentRunResponse,
     AgentSummary,
+    ErrorResponse,
     OutputContent,
     OutputSummary,
     RenderBatchResponse,
@@ -21,6 +25,8 @@ from src.api.schemas import (
     RenderResultResponse,
     RunAgentRequest,
     StatusResponse,
+    ThemePresetResponse,
+    WorkflowExecutionSummary,
     WorkflowRunResponse,
     WorkflowStepSummary,
     WorkflowSummary,
@@ -29,10 +35,58 @@ from src.core.config import settings
 from src.services import agent_service, output_service, rendering_service, workflow_service
 
 app = FastAPI(
-    title="재테크는 스크루지 — AI 콘텐츠 팀",
+    title=f"{settings.brand_name} — AI 콘텐츠 팀",
     description="20명의 AI 에이전트가 콘텐츠를 생산하는 1인 회사 운영 시스템",
-    version="0.3.0",
+    version="0.4.0",
 )
+
+
+# ── 에러 핸들러 ──────────────────────────────────────────────
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    """HTTPException을 통일된 ErrorResponse로 변환."""
+    code_map = {400: "BAD_REQUEST", 404: "NOT_FOUND", 429: "RATE_LIMITED", 500: "INTERNAL_ERROR"}
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=ErrorResponse(
+            error=str(exc.detail),
+            code=code_map.get(exc.status_code, f"HTTP_{exc.status_code}"),
+        ).model_dump(),
+    )
+
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """예상치 못한 예외를 통일된 ErrorResponse로 변환."""
+    return JSONResponse(
+        status_code=500,
+        content=ErrorResponse(
+            error="서버 내부 오류가 발생했습니다",
+            code="INTERNAL_ERROR",
+            detail=type(exc).__name__,
+        ).model_dump(),
+    )
+
+
+# ── 레이트 리미팅 (인메모리 슬라이딩 윈도우) ────────────────
+
+
+_rate_buckets: dict[str, list[float]] = defaultdict(list)
+_RATE_WINDOW = 60  # 초
+_RATE_LIMIT_RUN = settings.rate_limit_run
+
+
+def _check_rate(key: str, limit: int = _RATE_LIMIT_RUN) -> None:
+    """분당 요청 횟수 제한. 초과 시 429."""
+    now = time.time()
+    bucket = _rate_buckets[key]
+    # 윈도우 밖 항목 제거
+    _rate_buckets[key] = [t for t in bucket if now - t < _RATE_WINDOW]
+    if len(_rate_buckets[key]) >= limit:
+        raise HTTPException(429, "요청이 너무 많습니다. 잠시 후 다시 시도해주세요.")
+    _rate_buckets[key].append(now)
 
 
 # ── 에이전트 ─────────────────────────────────────────────────
@@ -73,6 +127,8 @@ def get_agent(agent_id: str):
 
 @app.post("/api/agents/{agent_id}/run", response_model=AgentRunResponse)
 async def run_single_agent(agent_id: str, req: RunAgentRequest):
+    _check_rate("agent_run")
+
     agent = agent_service.get_agent(agent_id)
     if not agent:
         raise HTTPException(404, f"에이전트 '{agent_id}'를 찾을 수 없습니다")
@@ -116,6 +172,8 @@ def list_workflows():
 
 @app.post("/api/workflows/{workflow_id}/run", response_model=WorkflowRunResponse)
 async def run_workflow(workflow_id: str):
+    _check_rate("workflow_run", limit=settings.rate_limit_workflow)
+
     workflow = workflow_service.get_preset_workflow(workflow_id)
     if not workflow:
         raise HTTPException(404, f"워크플로우 '{workflow_id}'를 찾을 수 없습니다")
@@ -136,6 +194,25 @@ async def run_workflow(workflow_id: str):
             for r in results
         ],
     )
+
+
+@app.get("/api/workflows/history", response_model=list[WorkflowExecutionSummary])
+def list_workflow_history(limit: int = 20):
+    """워크플로우 실행 이력 조회."""
+    return [
+        WorkflowExecutionSummary(
+            execution_id=ex.execution_id,
+            workflow_id=ex.workflow_id,
+            workflow_name=ex.workflow_name,
+            status=ex.status,
+            started_at=ex.started_at.isoformat(),
+            completed_at=ex.completed_at.isoformat() if ex.completed_at else "",
+            step_count=ex.step_count,
+            completed_steps=ex.completed_steps,
+            total_tokens=ex.total_tokens,
+        )
+        for ex in workflow_service.get_execution_history(limit=limit)
+    ]
 
 
 # ── 산출물 ───────────────────────────────────────────────────
@@ -186,6 +263,7 @@ def get_status():
 
 @app.post("/api/render/cardnews/stills", response_model=RenderBatchResponse)
 async def render_cardnews_stills(req: RenderCardNewsRequest):
+    _check_rate("render")
     results = await rendering_service.render_cardnews_stills(req.content_json)
     return RenderBatchResponse(
         results=[
@@ -202,6 +280,7 @@ async def render_cardnews_stills(req: RenderCardNewsRequest):
 
 @app.post("/api/render/cardnews/video", response_model=RenderResultResponse)
 async def render_cardnews_video(req: RenderCardNewsRequest):
+    _check_rate("render")
     r = await rendering_service.render_cardnews_video(req.content_json)
     return RenderResultResponse(
         success=r.success,
@@ -213,6 +292,7 @@ async def render_cardnews_video(req: RenderCardNewsRequest):
 
 @app.post("/api/render/reels", response_model=RenderResultResponse)
 async def render_reels(req: RenderReelsRequest):
+    _check_rate("render")
     r = await rendering_service.render_reels(
         scenes=req.scenes,
         brand_name=req.brand_name,
@@ -223,3 +303,21 @@ async def render_reels(req: RenderReelsRequest):
         error=r.error,
         duration_ms=r.duration_ms,
     )
+
+
+# ── 테마 프리셋 ──────────────────────────────────────────────
+
+
+@app.get("/api/themes", response_model=list[ThemePresetResponse])
+def list_themes():
+    """사용 가능한 카드뉴스 테마 프리셋 목록."""
+    result = []
+    for theme_id, theme in rendering_service.THEME_PRESETS.items():
+        result.append(ThemePresetResponse(
+            id=theme_id,
+            name=theme_id.replace("-", " ").title(),
+            description="",
+            category="",
+            colors=theme,
+        ))
+    return result

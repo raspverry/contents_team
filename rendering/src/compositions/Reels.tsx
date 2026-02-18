@@ -5,33 +5,11 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { z } from "zod";
+import { reelsSchema } from "../schemas";
+import type { SceneData, ThemeData } from "../schemas";
+import type { z } from "zod";
 
-// ── 스키마 ──────────────────────────────────────────────────
-
-const sceneSchema = z.object({
-  type: z.enum(["hook", "body", "cta"]),
-  text: z.string(),
-  subtext: z.string().optional(),
-  durationSeconds: z.number().default(5),
-});
-
-const themeSchema = z.object({
-  primary: z.string(),
-  secondary: z.string(),
-  background: z.string(),
-  text: z.string(),
-  accent: z.string(),
-});
-
-export const reelsSchema = z.object({
-  scenes: z.array(sceneSchema),
-  theme: themeSchema,
-  brandName: z.string().default("재테크는 스크루지"),
-});
-
-type SceneData = z.infer<typeof sceneSchema>;
-type ThemeData = z.infer<typeof themeSchema>;
+export { reelsSchema };
 
 // ── 씬 컴포넌트 ─────────────────────────────────────────────
 
@@ -112,7 +90,6 @@ const BodyScene: React.FC<{ scene: SceneData; theme: ThemeData }> = ({
       }}
     >
       <div style={{ transform: `translateY(${slideIn}px)`, opacity }}>
-        {/* 악센트 라인 */}
         <div
           style={{
             width: 60,
@@ -207,18 +184,20 @@ const CtaScene: React.FC<{
         </span>
       </div>
 
-      <p
-        style={{
-          position: "absolute",
-          bottom: 80,
-          color: theme.primary,
-          fontSize: 20,
-          fontWeight: 600,
-          fontFamily: "Pretendard, sans-serif",
-        }}
-      >
-        {brandName}
-      </p>
+      {brandName && (
+        <p
+          style={{
+            position: "absolute",
+            bottom: 80,
+            color: theme.primary,
+            fontSize: 20,
+            fontWeight: 600,
+            fontFamily: "Pretendard, sans-serif",
+          }}
+        >
+          {brandName}
+        </p>
+      )}
     </AbsoluteFill>
   );
 };

@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     api_port: int = 8000
     gui_port: int = 8501
 
+    # 레이트 리미팅
+    rate_limit_run: int = 10  # 에이전트/렌더 실행: 분당 N회
+    rate_limit_workflow: int = 5  # 워크플로우 실행: 분당 N회
+
     model_config = {"env_file": str(BASE_DIR / ".env"), "env_prefix": ""}
 
 

@@ -20,6 +20,62 @@ from src.core.config import BASE_DIR, settings
 RENDERING_DIR = BASE_DIR / "rendering"
 OUTPUT_DIR = BASE_DIR / "outputs"
 
+# 기본 테마 (rendering/src/theme.ts 의 DEFAULT_*_THEME 과 동기)
+_DEFAULT_CARDNEWS_THEME = {
+    "primary": "#D4AF37",
+    "secondary": "#1A1A2E",
+    "background": "#FFFFFF",
+    "text": "#1A1A2E",
+    "accent": "#4ECDC4",
+}
+
+_DEFAULT_REELS_THEME = {
+    "primary": "#D4AF37",
+    "secondary": "#1A1A2E",
+    "background": "#0F0F1A",
+    "text": "#FFFFFF",
+    "accent": "#4ECDC4",
+}
+
+# 카드뉴스 테마 프리셋 (rendering/src/theme.ts 의 THEME_PRESETS 와 동기)
+THEME_PRESETS: dict[str, dict[str, str]] = {
+    "premium-dark": {
+        "primary": "#C8A951",
+        "secondary": "#0A1628",
+        "background": "#121E33",
+        "text": "#F0EEE9",
+        "accent": "#2EC4B6",
+    },
+    "trust-blue": {
+        "primary": "#1B4DFF",
+        "secondary": "#0D1B2A",
+        "background": "#FFFFFF",
+        "text": "#1A1A2E",
+        "accent": "#3B82F6",
+    },
+    "warm-wealth": {
+        "primary": "#A47864",
+        "secondary": "#2C1810",
+        "background": "#FBF8F4",
+        "text": "#2C1810",
+        "accent": "#C2703E",
+    },
+    "emerald-growth": {
+        "primary": "#10B981",
+        "secondary": "#0B1D1A",
+        "background": "#0F2A24",
+        "text": "#ECFDF5",
+        "accent": "#34D399",
+    },
+    "neo-contrast": {
+        "primary": "#FFE135",
+        "secondary": "#1F1F1F",
+        "background": "#000000",
+        "text": "#FFFFFF",
+        "accent": "#FF6B6B",
+    },
+}
+
 
 class RenderType(str, Enum):
     CARDNEWS_VIDEO = "CardNews"
@@ -37,6 +93,13 @@ class RenderResult:
     duration_ms: int = 0
 
 
+def resolve_theme(theme_id: str | None) -> dict[str, str]:
+    """테마 ID로 색상 팔레트 조회. 없으면 기본 카드뉴스 테마."""
+    if not theme_id:
+        return _DEFAULT_CARDNEWS_THEME
+    return THEME_PRESETS.get(theme_id, _DEFAULT_CARDNEWS_THEME)
+
+
 def is_remotion_available() -> bool:
     """Remotion CLI가 사용 가능한지 확인."""
     npx = shutil.which("npx")
@@ -46,28 +109,22 @@ def is_remotion_available() -> bool:
     return node_modules.exists()
 
 
+def _brand_props() -> dict[str, str]:
+    """브랜드 정보를 Remotion props 형태로 반환."""
+    return {
+        "brandName": settings.brand_name,
+        "brandHandle": settings.brand_handle,
+    }
+
+
 async def render_cardnews_stills(
     content_json: dict,
     output_subdir: str = "cardnews",
 ) -> list[RenderResult]:
-    """카드뉴스를 개별 PNG 이미지로 렌더링.
-
-    Args:
-        content_json: 레이아웃 디자이너의 content.json 출력
-        output_subdir: 출력 디렉토리 (outputs/ 하위)
-
-    Returns:
-        카드별 RenderResult 리스트
-    """
+    """카드뉴스를 개별 PNG 이미지로 렌더링."""
     results: list[RenderResult] = []
     cards = content_json.get("cards", [])
-    theme = content_json.get("theme", {
-        "primary": "#D4AF37",
-        "secondary": "#1A1A2E",
-        "background": "#FFFFFF",
-        "text": "#1A1A2E",
-        "accent": "#4ECDC4",
-    })
+    theme = content_json.get("theme", _DEFAULT_CARDNEWS_THEME)
 
     out_dir = OUTPUT_DIR / output_subdir
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -77,7 +134,7 @@ async def render_cardnews_stills(
         page = card.get("page", 0)
         output_path = out_dir / f"card-{timestamp}-p{page}.png"
 
-        props = json.dumps({"card": card, "theme": theme})
+        props = json.dumps({"card": card, "theme": theme, **_brand_props()})
         result = await _run_remotion_still(
             composition="CardNewsStill",
             props=props,
@@ -92,23 +149,9 @@ async def render_cardnews_video(
     content_json: dict,
     output_subdir: str = "cardnews",
 ) -> RenderResult:
-    """카드뉴스를 슬라이드 영상(MP4)으로 렌더링.
-
-    Args:
-        content_json: 레이아웃 디자이너의 content.json 출력
-        output_subdir: 출력 디렉토리
-
-    Returns:
-        RenderResult
-    """
+    """카드뉴스를 슬라이드 영상(MP4)으로 렌더링."""
     cards = content_json.get("cards", [])
-    theme = content_json.get("theme", {
-        "primary": "#D4AF37",
-        "secondary": "#1A1A2E",
-        "background": "#FFFFFF",
-        "text": "#1A1A2E",
-        "accent": "#4ECDC4",
-    })
+    theme = content_json.get("theme", _DEFAULT_CARDNEWS_THEME)
 
     out_dir = OUTPUT_DIR / output_subdir
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -118,7 +161,11 @@ async def render_cardnews_video(
     frames_per_card = 90  # 3초 @ 30fps
     total_frames = len(cards) * frames_per_card
 
-    props = json.dumps({"cards": cards, "theme": theme})
+    props = json.dumps({
+        "cards": cards,
+        "theme": theme,
+        **_brand_props(),
+    })
 
     return await _run_remotion_render(
         composition="CardNews",
@@ -133,24 +180,7 @@ async def render_reels(
     output_subdir: str = "reels",
     brand_name: str = "",
 ) -> RenderResult:
-    """릴스 영상(MP4)을 렌더링.
-
-    Args:
-        scenes: 씬 리스트 [{"type": "hook|body|cta", "text": "...", "durationSeconds": 5}]
-        output_subdir: 출력 디렉토리
-        brand_name: 브랜드명
-
-    Returns:
-        RenderResult
-    """
-    theme = {
-        "primary": "#D4AF37",
-        "secondary": "#1A1A2E",
-        "background": "#0F0F1A",
-        "text": "#FFFFFF",
-        "accent": "#4ECDC4",
-    }
-
+    """릴스 영상(MP4)을 렌더링."""
     out_dir = OUTPUT_DIR / output_subdir
     out_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -161,8 +191,9 @@ async def render_reels(
 
     props = json.dumps({
         "scenes": scenes,
-        "theme": theme,
+        "theme": _DEFAULT_REELS_THEME,
         "brandName": brand_name or settings.brand_name,
+        "brandHandle": settings.brand_handle,
     })
 
     return await _run_remotion_render(

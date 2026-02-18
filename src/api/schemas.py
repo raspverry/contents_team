@@ -112,3 +112,40 @@ class RenderResultResponse(BaseModel):
 
 class RenderBatchResponse(BaseModel):
     results: list[RenderResultResponse]
+
+
+# ── 응답: 에러 (통일) ────────────────────────────────────────
+
+
+class ErrorResponse(BaseModel):
+    """모든 에러 응답의 통일 스키마."""
+
+    error: str
+    code: str
+    detail: str = ""
+
+
+# ── 응답: 워크플로우 실행 이력 ────────────────────────────────
+
+
+class WorkflowExecutionSummary(BaseModel):
+    execution_id: str
+    workflow_id: str
+    workflow_name: str
+    status: str
+    started_at: str
+    completed_at: str = ""
+    step_count: int = 0
+    completed_steps: int = 0
+    total_tokens: int = 0
+
+
+# ── 응답: 테마 프리셋 ──────────────────────────────────────
+
+
+class ThemePresetResponse(BaseModel):
+    id: str
+    name: str
+    description: str
+    category: str
+    colors: dict[str, str]
