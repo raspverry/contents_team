@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     max_tokens: int = 4096
 
     openai_api_key: str = ""
-    openai_model: str = "gpt-4o"
+    openai_model: str = "gpt-5-mini"
     openai_max_tokens: int = 4096
 
     # 브랜드 설정

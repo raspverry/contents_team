@@ -132,26 +132,23 @@ async def _create_openai_message(
     model: str,
     max_tokens: int,
 ) -> AIResponse:
-    """OpenAI API 호출."""
+    """OpenAI Responses API 호출."""
     client = _get_openai_client()
-    response = await client.chat.completions.create(
+    response = await client.responses.create(
         model=model,
-        max_tokens=max_tokens,
-        messages=[
-            {"role": "system", "content": system},
-            {"role": "user", "content": user_message},
-        ],
+        max_output_tokens=max_tokens,
+        instructions=system,
+        input=user_message,
     )
 
-    choice = response.choices[0]
-    if not choice.message.content:
+    if not response.output_text:
         raise ValueError("API 응답에 텍스트 콘텐츠가 없습니다")
 
     usage = response.usage
     return AIResponse(
-        content=choice.message.content,
-        input_tokens=usage.prompt_tokens if usage else 0,
-        output_tokens=usage.completion_tokens if usage else 0,
+        content=response.output_text,
+        input_tokens=usage.input_tokens if usage else 0,
+        output_tokens=usage.output_tokens if usage else 0,
     )
 
 
