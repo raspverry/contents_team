@@ -88,3 +88,27 @@ class StatusResponse(BaseModel):
     workflows_count: int
     outputs_count: int
     today: str
+    remotion_available: bool = False
+
+
+# ── 요청/응답: 렌더링 ────────────────────────────────────────
+
+
+class RenderCardNewsRequest(BaseModel):
+    content_json: dict
+
+
+class RenderReelsRequest(BaseModel):
+    scenes: list[dict]
+    brand_name: str = "재테크는 스크루지"
+
+
+class RenderResultResponse(BaseModel):
+    success: bool
+    output_path: str = ""
+    error: str = ""
+    duration_ms: int = 0
+
+
+class RenderBatchResponse(BaseModel):
+    results: list[RenderResultResponse]

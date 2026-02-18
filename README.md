@@ -130,6 +130,37 @@ Routes (얇은 라우트) → Services (비즈니스 로직) → Core (모델/�
 - **워크플로우 실행**: DAG 기반 의존성 해결, `asyncio.gather`로 병렬 실행
 - **스토리지 추상화**: `StorageBackend` ABC → 현재 `FileStorage`, SaaS 전환 시 DB/S3로 교체
 
+## 렌더링 (Remotion)
+
+카드뉴스 이미지/영상, 릴스 영상을 자동 렌더링합니다.
+
+### 렌더링 설정 (선택)
+
+```bash
+cd rendering
+npm install
+```
+
+### 렌더링 API
+
+| Method | Path | 설명 |
+|--------|------|------|
+| POST | `/api/render/cardnews/stills` | 카드뉴스 → PNG 이미지 (장별) |
+| POST | `/api/render/cardnews/video` | 카드뉴스 → MP4 슬라이드 영상 |
+| POST | `/api/render/reels` | 릴스 → MP4 영상 |
+
+### 렌더링 파이프라인
+
+```
+에이전트 출력 (텍스트)
+    ↓
+content.json (레이아웃 디자이너)
+    ↓
+Remotion Composition (React)
+    ↓
+PNG / MP4 (렌더링 결과)
+```
+
 ## 기술 스택
 
 - **Python** >= 3.11
@@ -137,6 +168,7 @@ Routes (얇은 라우트) → Services (비즈니스 로직) → Core (모델/�
 - **FastAPI** — REST API
 - **Streamlit** — GUI (MVP)
 - **Anthropic SDK** — Claude API
+- **Remotion** — 카드뉴스/릴스 렌더링 (선택)
 - **Pydantic** — 데이터 검증/스키마
 - **pydantic-settings** — 환경 변수 관리
 

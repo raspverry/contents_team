@@ -15,6 +15,10 @@ from src.api.schemas import (
     AgentSummary,
     OutputContent,
     OutputSummary,
+    RenderBatchResponse,
+    RenderCardNewsRequest,
+    RenderReelsRequest,
+    RenderResultResponse,
     RunAgentRequest,
     StatusResponse,
     WorkflowRunResponse,
@@ -22,12 +26,12 @@ from src.api.schemas import (
     WorkflowSummary,
 )
 from src.core.config import settings
-from src.services import agent_service, output_service, workflow_service
+from src.services import agent_service, output_service, rendering_service, workflow_service
 
 app = FastAPI(
     title="재테크는 스크루지 — AI 콘텐츠 팀",
-    description="15명의 AI 에이전트가 콘텐츠를 생산하는 1인 회사 운영 시스템",
-    version="0.2.0",
+    description="20명의 AI 에이전트가 콘텐츠를 생산하는 1인 회사 운영 시스템",
+    version="0.3.0",
 )
 
 
@@ -173,4 +177,49 @@ def get_status():
         workflows_count=len(workflows),
         outputs_count=len(outputs),
         today=date.today().isoformat(),
+        remotion_available=rendering_service.is_remotion_available(),
+    )
+
+
+# ── 렌더링 ────────────────────────────────────────────────────
+
+
+@app.post("/api/render/cardnews/stills", response_model=RenderBatchResponse)
+async def render_cardnews_stills(req: RenderCardNewsRequest):
+    results = await rendering_service.render_cardnews_stills(req.content_json)
+    return RenderBatchResponse(
+        results=[
+            RenderResultResponse(
+                success=r.success,
+                output_path=r.output_path,
+                error=r.error,
+                duration_ms=r.duration_ms,
+            )
+            for r in results
+        ]
+    )
+
+
+@app.post("/api/render/cardnews/video", response_model=RenderResultResponse)
+async def render_cardnews_video(req: RenderCardNewsRequest):
+    r = await rendering_service.render_cardnews_video(req.content_json)
+    return RenderResultResponse(
+        success=r.success,
+        output_path=r.output_path,
+        error=r.error,
+        duration_ms=r.duration_ms,
+    )
+
+
+@app.post("/api/render/reels", response_model=RenderResultResponse)
+async def render_reels(req: RenderReelsRequest):
+    r = await rendering_service.render_reels(
+        scenes=req.scenes,
+        brand_name=req.brand_name,
+    )
+    return RenderResultResponse(
+        success=r.success,
+        output_path=r.output_path,
+        error=r.error,
+        duration_ms=r.duration_ms,
     )
