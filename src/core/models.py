@@ -28,6 +28,7 @@ class TeamType(str, Enum):
     REELS = "team3-reels"
     THREADS = "team4-threads"
     FANDING = "team5-fanding"
+    CARDNEWS = "team6-cardnews"
 
     @property
     def meta(self) -> TeamMeta:
@@ -48,6 +49,7 @@ TEAM_META: dict[TeamType, TeamMeta] = {
     TeamType.REELS: TeamMeta("🎬 인스타 릴스 제작팀", "reels"),
     TeamType.THREADS: TeamMeta("🧵 스레드 콘텐츠팀", "threads"),
     TeamType.FANDING: TeamMeta("🎙 팬딩 멤버십팀", "fanding"),
+    TeamType.CARDNEWS: TeamMeta("🎨 카드뉴스 제작팀", "cardnews"),
 }
 
 

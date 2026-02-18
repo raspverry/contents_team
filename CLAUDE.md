@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**재테크는 스크루지** — 15명의 AI 에이전트가 콘텐츠를 생산하는 1인 회사 운영 시스템.
+**재테크는 스크루지** — 20명의 AI 에이전트가 콘텐츠를 생산하는 1인 회사 운영 시스템.
 
 - 백엔드: FastAPI
 - GUI: Streamlit (MVP, 향후 Next.js로 전환)
@@ -18,7 +18,8 @@ contents_team/
 │   ├── team2-analysis/          #   콘텐츠 분석팀 (3명)
 │   ├── team3-reels/             #   릴스 제작팀 (4명)
 │   ├── team4-threads/           #   스레드 콘텐츠팀 (2명)
-│   └── team5-fanding/           #   팬딩 멤버십팀 (4명)
+│   ├── team5-fanding/           #   팬딩 멤버십팀 (4명)
+│   └── team6-cardnews/          #   카드뉴스 제작팀 (5명)
 ├── src/
 │   ├── core/
 │   │   ├── config.py            # Settings (pydantic-settings), 경로 상수
@@ -132,6 +133,7 @@ Storage (src/services/storage.py)
 | **릴스** | 친근 + 임팩트 | "월급 300인데 1년에 1000만원 모았습니다" |
 | **팬딩 컬럼** | 존댓말 + 전문가 | "이번 주 CPI 데이터의 핵심을 짚어드리겠습니다." |
 | **팬딩 브리핑** | 존댓말 + 친근 | "오늘 시장, 한 줄로 정리해드릴게요." |
+| **카드뉴스** | 반말 + 정보전달 | "사회초년생 월급관리 5단계" |
 
 ## AI Assistant Guidelines
 

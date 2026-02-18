@@ -148,6 +148,30 @@ def preset_etf_report() -> Workflow:
     )
 
 
+def preset_cardnews_pipeline() -> Workflow:
+    return Workflow(
+        id="cardnews-pipeline",
+        name="카드뉴스 파이프라인",
+        description="리서치 → 레이아웃 설계 → 렌더링 지시서 (3단계 순차)",
+        steps=[
+            WorkflowStep(
+                agent_id="cardnews-researcher",
+                message_template="이번 카드뉴스 주제를 리서치하고 기획안을 작성해주세요. 재테크 정보형 주제로, 5~8장 구성, 장별 핵심 내용과 비주얼 제안을 포함해주세요.",
+            ),
+            WorkflowStep(
+                agent_id="layout-designer",
+                depends_on=["cardnews-researcher"],
+                message_template="위 기획안을 바탕으로 카드별 레이아웃을 설계해주세요. 적절한 블록을 선택하고 content.json 형식으로 구조화해주세요.",
+            ),
+            WorkflowStep(
+                agent_id="cardnews-maker",
+                depends_on=["layout-designer"],
+                message_template="위 content.json을 바탕으로 카드별 렌더링 지시서를 작성해주세요. 색상, 폰트, 여백, 정렬 등 시각적 디테일을 확정해주세요.",
+            ),
+        ],
+    )
+
+
 # 프리셋 레지스트리: id → 팩토리 함수
 PRESET_FACTORIES: dict[str, Callable[[], Workflow]] = {
     "weekly-planning": preset_weekly_planning,
@@ -156,6 +180,7 @@ PRESET_FACTORIES: dict[str, Callable[[], Workflow]] = {
     "daily-briefing": preset_daily_briefing,
     "weekly-column": preset_weekly_column,
     "etf-report": preset_etf_report,
+    "cardnews-pipeline": preset_cardnews_pipeline,
 }
 
 
