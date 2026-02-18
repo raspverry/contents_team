@@ -88,6 +88,8 @@ class StatusResponse(BaseModel):
     workflows_count: int
     outputs_count: int
     today: str
+    ai_provider: str = ""
+    ai_model: str = ""
     remotion_available: bool = False
 
 

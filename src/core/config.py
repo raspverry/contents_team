@@ -17,9 +17,16 @@ WORKFLOWS_DIR = BASE_DIR / "workflows"
 class Settings(BaseSettings):
     """환경 변수 기반 설정."""
 
+    # AI 프로바이더 설정
+    ai_provider: str = "anthropic"  # "anthropic" 또는 "openai"
+
     anthropic_api_key: str = ""
     model: str = "claude-sonnet-4-5-20250929"
     max_tokens: int = 4096
+
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4o"
+    openai_max_tokens: int = 4096
 
     # 브랜드 설정
     brand_name: str = "재테크는 스크루지"

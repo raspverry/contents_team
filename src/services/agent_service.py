@@ -11,8 +11,9 @@ from datetime import datetime
 from pathlib import Path
 
 import anthropic
+import openai
 
-from src.core.clients import get_async_client
+from src.core.clients import create_message
 from src.core.config import AGENTS_DIR, settings
 from src.core.models import AgentInfo, AgentRunResult, RunStatus, TeamType
 from src.services.storage import get_storage
@@ -134,22 +135,14 @@ async def run_agent(
         system += f"\n\n## 참고 컨텍스트\n{context}"
 
     try:
-        client = get_async_client()
-        response = await client.messages.create(
-            model=settings.model,
-            max_tokens=settings.max_tokens,
+        ai_response = await create_message(
             system=system,
-            messages=[{"role": "user", "content": user_message}],
+            user_message=user_message,
         )
 
-        if not response.content or not hasattr(response.content[0], "text"):
-            raise ValueError("API 응답에 텍스트 콘텐츠가 없습니다")
-        content = response.content[0].text
-        tokens = response.usage.input_tokens + response.usage.output_tokens
-
         result.status = RunStatus.COMPLETED
-        result.content = content
-        result.tokens_used = tokens
+        result.content = ai_response.content
+        result.tokens_used = ai_response.total_tokens
         result.finished_at = datetime.now()
 
         if save_output:
@@ -157,11 +150,11 @@ async def run_agent(
             filename = storage.generate_filename(agent.id)
             header = f"# {agent.name} — {datetime.now().isoformat()}\n\n"
             saved_path = storage.save(
-                agent.team.output_dir, filename, header + content
+                agent.team.output_dir, filename, header + ai_response.content
             )
             result.output_file = saved_path
 
-    except anthropic.APIError as e:
+    except (anthropic.APIError, openai.APIError) as e:
         result.status = RunStatus.FAILED
         result.error = str(e)
         result.finished_at = datetime.now()

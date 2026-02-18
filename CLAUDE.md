@@ -7,7 +7,7 @@
 - 백엔드: FastAPI
 - GUI: Streamlit (MVP, 향후 Next.js로 전환)
 - 패키지 매니저: uv
-- AI: Anthropic Claude API
+- AI: Anthropic Claude API / OpenAI API (`.env`의 `AI_PROVIDER`로 전환)
 
 ## Repository Structure
 
@@ -24,7 +24,7 @@ contents_team/
 │   ├── core/
 │   │   ├── config.py            # Settings (pydantic-settings), 경로 상수
 │   │   ├── models.py            # 도메인 모델: TeamType, AgentInfo, Workflow 등
-│   │   └── clients.py           # Anthropic AsyncAnthropic 싱글턴
+│   │   └── clients.py           # AI 클라이언트 추상화 (Anthropic/OpenAI)
 │   ├── services/
 │   │   ├── agent_service.py     # 에이전트 로딩(캐시) + 실행
 │   │   ├── workflow_service.py  # 워크플로우 프리셋(팩토리) + 실행 엔진
@@ -51,7 +51,7 @@ uv sync
 
 # 환경 변수
 cp .env.example .env
-# ANTHROPIC_API_KEY 설정 필수
+# AI_PROVIDER 선택 (anthropic / openai) + 해당 API 키 설정
 ```
 
 ## Commands
@@ -84,6 +84,7 @@ Storage (src/services/storage.py)
 - **에이전트 캐시**: `agent_service._agent_cache` — 첫 로드 후 재사용, `force_reload`로 갱신
 - **워크플로우 팩토리**: `workflow_service.PRESET_FACTORIES` — `date.today()`가 실행 시점에 평가되도록 팩토리 함수 사용
 - **워크플로우 실행**: DAG 기반 의존성 해결, `asyncio.gather`로 병렬 실행, step index 추적 (동일 에이전트 복수 실행 안전)
+- **멀티 AI 프로바이더**: `clients.create_message()` 통일 인터페이스 → `AI_PROVIDER` 설정에 따라 Anthropic/OpenAI 자동 전환
 - **스토리지 추상화**: `StorageBackend` ABC → `FileStorage` (SaaS 전환 시 교체)
 - **파일명**: `YYYY-MM-DD-{agent_id}-{HHMMSSffffff}[-suffix].md` (마이크로초 포함, 중복 방지)
 - **경로 보안**: `FileStorage.load()`에서 path traversal 방지

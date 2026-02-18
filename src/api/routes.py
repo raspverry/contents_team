@@ -248,12 +248,19 @@ def get_status():
     agents = agent_service.load_all_agents()
     outputs = output_service.list_outputs()
     workflows = workflow_service.list_preset_workflows()
+    ai_model = (
+        settings.openai_model
+        if settings.ai_provider == "openai"
+        else settings.model
+    )
     return StatusResponse(
         brand=settings.brand_name,
         agents_count=len(agents),
         workflows_count=len(workflows),
         outputs_count=len(outputs),
         today=date.today().isoformat(),
+        ai_provider=settings.ai_provider,
+        ai_model=ai_model,
         remotion_available=rendering_service.is_remotion_available(),
     )
 
