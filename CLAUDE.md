@@ -85,6 +85,7 @@ Storage (src/services/storage.py)
 - **워크플로우 팩토리**: `workflow_service.PRESET_FACTORIES` — `date.today()`가 실행 시점에 평가되도록 팩토리 함수 사용
 - **워크플로우 실행**: DAG 기반 의존성 해결, `asyncio.gather`로 병렬 실행, step index 추적 (동일 에이전트 복수 실행 안전)
 - **멀티 AI 프로바이더**: `clients.create_message()` 통일 인터페이스 → `AI_PROVIDER` 설정에 따라 Anthropic/OpenAI 자동 전환
+- **다국어 콘텐츠**: `CONTENT_LANGUAGE` 설정(`ko`/`ja`/`en`)에 따라 언어별 스타일 가이드가 시스템 프롬프트에 자동 주입. `models.py`의 `LANGUAGE_PROFILES` 단일 소스
 - **스토리지 추상화**: `StorageBackend` ABC → `FileStorage` (SaaS 전환 시 교체)
 - **파일명**: `YYYY-MM-DD-{agent_id}-{HHMMSSffffff}[-suffix].md` (마이크로초 포함, 중복 방지)
 - **경로 보안**: `FileStorage.load()`에서 path traversal 방지
@@ -128,6 +129,10 @@ Storage (src/services/storage.py)
 
 ## Tone & Manner Rules
 
+`CONTENT_LANGUAGE` 설정에 따라 자동 전환. 언어별 전체 가이드는 `models.py`의 `LANGUAGE_PROFILES` 참조.
+
+### 한국어 (ko) — 기본
+
 | 채널 | 톤 | 예시 |
 |------|-----|------|
 | **스레드** | 반말 + 친근 | "적금 이자로는 부자 못 돼. 근데 습관은 만들 수 있어." |
@@ -135,6 +140,26 @@ Storage (src/services/storage.py)
 | **팬딩 컬럼** | 존댓말 + 전문가 | "이번 주 CPI 데이터의 핵심을 짚어드리겠습니다." |
 | **팬딩 브리핑** | 존댓말 + 친근 | "오늘 시장, 한 줄로 정리해드릴게요." |
 | **카드뉴스** | 반말 + 정보전달 | "사회초년생 월급관리 5단계" |
+
+### 日本語 (ja)
+
+| チャンネル | トーン | 例 |
+|-----------|--------|-----|
+| **スレッド/X** | タメ口 + 共感 | "貯金だけじゃお金持ちになれない。でも習慣は作れる。" |
+| **リール** | カジュアル + インパクト | "手取り20万で1年で100万貯めた方法" |
+| **有料コラム** | 丁寧語 + 専門的 | "今週のCPIデータのポイントを解説いたします。" |
+| **ブリーフィング** | 丁寧語 + 親しみ | "今日のマーケット、一言でまとめますね。" |
+| **カードニュース** | 簡潔 + わかりやすい | "新社会人の給料管理5ステップ" |
+
+### English (en)
+
+| Channel | Tone | Example |
+|---------|------|---------|
+| **Threads/X** | Casual + relatable | "Savings accounts won't make you rich. But they build the habit." |
+| **Reels/Shorts** | Punchy + hook-driven | "I saved $10K on a $30K salary. Here's how." |
+| **Premium column** | Professional + authoritative | "Let's break down this week's CPI data." |
+| **Daily briefing** | Conversational + expert | "Here's your one-line market recap for today." |
+| **Cardnews** | Clear + actionable | "5 Money Moves for Your First Job" |
 
 ## AI Assistant Guidelines
 

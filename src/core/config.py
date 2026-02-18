@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-5-mini"
     openai_max_tokens: int = 4096
 
+    # 콘텐츠 언어 설정
+    content_language: str = "ko"  # "ko", "ja", "en"
+
     # 브랜드 설정
     brand_name: str = "재테크는 스크루지"
     brand_handle: str = "@재테크는스크루지"

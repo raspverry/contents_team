@@ -13,6 +13,76 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
+# ── 언어별 스타일 가이드 (단일 소스) ─────────────────────────
+
+
+@dataclass(frozen=True)
+class LanguageProfile:
+    """콘텐츠 언어 프로필."""
+
+    code: str
+    label: str
+    instruction: str
+    style_guide: str
+
+
+LANGUAGE_PROFILES: dict[str, LanguageProfile] = {
+    "ko": LanguageProfile(
+        code="ko",
+        label="한국어",
+        instruction="모든 콘텐츠를 한국어로 작성하세요.",
+        style_guide=(
+            "## 한국어 콘텐츠 스타일 가이드\n"
+            "- 스레드: 반말 + 친근 (예: '적금 이자로는 부자 못 돼. 근데 습관은 만들 수 있어.')\n"
+            "- 릴스: 친근 + 임팩트 (예: '월급 300인데 1년에 1000만원 모았습니다')\n"
+            "- 팬딩 컬럼: 존댓말 + 전문가 (예: '이번 주 CPI 데이터의 핵심을 짚어드리겠습니다.')\n"
+            "- 팬딩 브리핑: 존댓말 + 친근 (예: '오늘 시장, 한 줄로 정리해드릴게요.')\n"
+            "- 카드뉴스: 반말 + 정보전달 (예: '사회초년생 월급관리 5단계')\n"
+            "- 플랫폼: Instagram, Threads, 네이버 블로그\n"
+            "- MZ세대 트렌드 용어를 자연스럽게 활용\n"
+            "- 숫자/금액은 한국 원화(₩) 기준"
+        ),
+    ),
+    "ja": LanguageProfile(
+        code="ja",
+        label="日本語",
+        instruction="すべてのコンテンツを日本語で作成してください。",
+        style_guide=(
+            "## 日本語コンテンツスタイルガイド\n"
+            "- スレッド/X: タメ口 + 共感型 (例: '貯金だけじゃお金持ちになれない。でも習慣は作れる。')\n"
+            "- リール: カジュアル + インパクト (例: '手取り20万で1年で100万貯めた方法')\n"
+            "- 有料コラム: 丁寧語 + 専門的 (例: '今週のCPIデータのポイントを解説いたします。')\n"
+            "- デイリーブリーフィング: 丁寧語 + 親しみ (例: '今日のマーケット、一言でまとめますね。')\n"
+            "- カードニュース: 簡潔 + わかりやすい (例: '新社会人の給料管理5ステップ')\n"
+            "- プラットフォーム: X (Twitter), Instagram, note, YouTube Shorts\n"
+            "- Z世代・ミレニアル世代に響く表現を使用\n"
+            "- 金額は日本円(¥)基準"
+        ),
+    ),
+    "en": LanguageProfile(
+        code="en",
+        label="English",
+        instruction="Write all content in English.",
+        style_guide=(
+            "## English Content Style Guide\n"
+            "- Threads/X: Casual + relatable (e.g., 'Savings accounts won't make you rich. But they build the habit.')\n"
+            "- Reels/Shorts: Punchy + hook-driven (e.g., 'I saved $10K on a $30K salary. Here's how.')\n"
+            "- Premium columns: Professional + authoritative (e.g., 'Let's break down this week's CPI data.')\n"
+            "- Daily briefing: Conversational + expert (e.g., 'Here's your one-line market recap for today.')\n"
+            "- Cardnews: Clear + actionable (e.g., '5 Money Moves for Your First Job')\n"
+            "- Platforms: Instagram, TikTok, X, Substack/Newsletter\n"
+            "- Use Gen Z / millennial-friendly language naturally\n"
+            "- Amounts in USD ($) by default"
+        ),
+    ),
+}
+
+
+def get_language_profile(code: str) -> LanguageProfile:
+    """언어 코드로 프로필 조회. 미지원 언어는 ko 폴백."""
+    return LANGUAGE_PROFILES.get(code, LANGUAGE_PROFILES["ko"])
+
+
 # ── 팀 메타데이터 (단일 소스) ────────────────────────────────
 
 

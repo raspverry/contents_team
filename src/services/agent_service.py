@@ -15,7 +15,7 @@ import openai
 
 from src.core.clients import create_message
 from src.core.config import AGENTS_DIR, settings
-from src.core.models import AgentInfo, AgentRunResult, RunStatus, TeamType
+from src.core.models import AgentInfo, AgentRunResult, RunStatus, TeamType, get_language_profile
 from src.services.storage import get_storage
 
 
@@ -27,12 +27,16 @@ _agent_cache: dict[str, AgentInfo] | None = None
 
 def _substitute_brand_vars(text: str) -> str:
     """프롬프트 내 {{변수}}를 settings 값으로 치환."""
+    lang = get_language_profile(settings.content_language)
     replacements = {
         "{{brand_name}}": settings.brand_name,
         "{{brand_handle}}": settings.brand_handle,
         "{{brand_topic}}": settings.brand_topic,
         "{{brand_description}}": settings.brand_description,
         "{{brand_disclaimer}}": settings.brand_disclaimer,
+        "{{content_language}}": lang.label,
+        "{{language_instruction}}": lang.instruction,
+        "{{language_style_guide}}": lang.style_guide,
     }
     for key, val in replacements.items():
         text = text.replace(key, val)
@@ -130,7 +134,10 @@ async def run_agent(
     )
 
     # 시스템 프롬프트 조합
+    lang = get_language_profile(settings.content_language)
     system = agent.system_prompt
+    if lang.code != "ko":
+        system += f"\n\n## 콘텐츠 언어\n{lang.instruction}\n\n{lang.style_guide}"
     if context:
         system += f"\n\n## 참고 컨텍스트\n{context}"
 
