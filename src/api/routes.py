@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import time
 from collections import defaultdict
-from datetime import date
+from datetime import date, datetime
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -16,6 +16,8 @@ from src.api.schemas import (
     AgentDetail,
     AgentRunResponse,
     AgentSummary,
+    BrandGuidelinesRequest,
+    BrandGuidelinesResponse,
     ChatMessageResponse,
     ChatRoomResponse,
     ChatRoundResponse,
@@ -23,10 +25,14 @@ from src.api.schemas import (
     ErrorResponse,
     OutputContent,
     OutputSummary,
+    QualityCheckResponse,
+    QualityReportResponse,
     RenderBatchResponse,
     RenderCardNewsRequest,
     RenderReelsRequest,
     RenderResultResponse,
+    ReviewContentRequest,
+    ReviewOutputRequest,
     RunAgentRequest,
     SendChatMessageRequest,
     StatusResponse,
@@ -38,7 +44,7 @@ from src.api.schemas import (
 )
 from src.core.config import APP_VERSION, settings
 from src.core.models import TeamType
-from src.services import agent_service, chat_service, output_service, rendering_service, workflow_service
+from src.services import agent_service, chat_service, output_service, rendering_service, review_service, workflow_service
 
 app = FastAPI(
     title=f"{settings.brand_name} — AI 콘텐츠 팀",
@@ -334,6 +340,94 @@ def list_themes():
             colors=theme,
         ))
     return result
+
+
+# ── 품질 검증 ────────────────────────────────────────────────
+
+
+def _quality_report_to_response(report: review_service.QualityReport) -> QualityReportResponse:
+    """QualityReport → API 응답 스키마 변환."""
+    def _check(c: review_service.QualityCheck) -> QualityCheckResponse:
+        return QualityCheckResponse(
+            check_id=c.check_id,
+            category=c.category,
+            name=c.name,
+            verdict=c.verdict.value,
+            score=c.score,
+            detail=c.detail,
+            suggestion=c.suggestion,
+        )
+
+    return QualityReportResponse(
+        report_id=report.report_id,
+        content_preview=report.content_preview,
+        agent_id=report.agent_id,
+        brand_checks=[_check(c) for c in report.brand_checks],
+        brand_score=report.brand_score,
+        brand_verdict=report.brand_verdict.value,
+        content_checks=[_check(c) for c in report.content_checks],
+        content_score=report.content_score,
+        content_verdict=report.content_verdict.value,
+        overall_score=report.overall_score,
+        overall_verdict=report.overall_verdict.value,
+        tokens_used=report.tokens_used,
+        reviewed_at=report.reviewed_at.isoformat(),
+    )
+
+
+@app.post("/api/review", response_model=QualityReportResponse)
+async def review_content(req: ReviewContentRequest):
+    """콘텐츠 품질 검증 (Phase 1: 브랜드 준수 → Phase 2: 콘텐츠 품질)."""
+    _check_rate("review")
+
+    if not req.content.strip():
+        raise HTTPException(400, "검증할 콘텐츠가 비어있습니다")
+
+    report = await review_service.review_content(
+        req.content,
+        agent_id=req.agent_id,
+        channel_hint=req.channel_hint,
+    )
+    return _quality_report_to_response(report)
+
+
+@app.post("/api/review/output", response_model=QualityReportResponse)
+async def review_existing_output(req: ReviewOutputRequest):
+    """기존 산출물 품질 검증."""
+    _check_rate("review")
+
+    content = output_service.get_output_content(req.team, req.filename)
+    if content is None:
+        raise HTTPException(404, "파일을 찾을 수 없습니다")
+
+    report = await review_service.review_content(
+        content,
+        channel_hint=req.team,
+    )
+    return _quality_report_to_response(report)
+
+
+# ── 브랜드 가이드라인 ────────────────────────────────────────
+
+
+@app.get("/api/brand-guidelines", response_model=BrandGuidelinesResponse)
+def get_brand_guidelines():
+    """브랜드 가이드라인 조회 (원본 텍스트)."""
+    content = review_service.load_brand_guidelines_raw()
+    path = review_service.BRAND_GUIDELINES_PATH
+    last_modified = ""
+    if path.exists():
+        last_modified = datetime.fromtimestamp(path.stat().st_mtime).isoformat()
+    return BrandGuidelinesResponse(content=content, last_modified=last_modified)
+
+
+@app.post("/api/brand-guidelines", response_model=BrandGuidelinesResponse)
+def update_brand_guidelines(req: BrandGuidelinesRequest):
+    """브랜드 가이드라인 저장."""
+    review_service.save_brand_guidelines(req.content)
+    path = review_service.BRAND_GUIDELINES_PATH
+    last_modified = datetime.fromtimestamp(path.stat().st_mtime).isoformat()
+    return BrandGuidelinesResponse(content=req.content, last_modified=last_modified)
 
 
 # ── 팀 채팅 ──────────────────────────────────────────────────

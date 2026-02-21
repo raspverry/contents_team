@@ -266,8 +266,59 @@ def _page_outputs():
             data = _api_get(f"/api/outputs/{item['team']}/{item['filename']}")
             if data:
                 st.markdown(data["content"])
+
+                if st.button("🔍 품질 검증", key=f"review_{item['filename']}"):
+                    with st.spinner("AI 품질 검증 중 (Phase 1: 브랜드 → Phase 2: 콘텐츠)..."):
+                        review = _api_post(
+                            "/api/review/output",
+                            json={"team": item["team"], "filename": item["filename"]},
+                        )
+                    if review and "overall_score" in review:
+                        _display_quality_report(review)
+                    else:
+                        st.error("품질 검증에 실패했습니다.")
             else:
                 st.error("파일을 불러올 수 없습니다.")
+
+
+# ── 품질 검증 표시 ───────────────────────────────────────
+
+_VERDICT_EMOJI = {"pass": "✅", "warn": "⚠️", "fail": "❌"}
+
+
+def _display_quality_report(report: dict):
+    """품질 검증 결과를 시각적으로 표시."""
+    overall = report["overall_verdict"]
+    score = report["overall_score"]
+    st.markdown(f"### {_VERDICT_EMOJI.get(overall, '❓')} 종합 점수: {score}/100")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        bv = report["brand_verdict"]
+        st.markdown(
+            f"**Phase 1: 브랜드 준수 {report['brand_score']}/100** "
+            f"{_VERDICT_EMOJI.get(bv, '')}"
+        )
+        for check in report.get("brand_checks", []):
+            emoji = _VERDICT_EMOJI.get(check["verdict"], "❓")
+            st.markdown(f"- {emoji} **{check['name']}**: {check['score']}/100")
+            if check.get("suggestion"):
+                st.caption(f"  → {check['suggestion']}")
+
+    with col2:
+        cv = report["content_verdict"]
+        st.markdown(
+            f"**Phase 2: 콘텐츠 품질 {report['content_score']}/100** "
+            f"{_VERDICT_EMOJI.get(cv, '')}"
+        )
+        for check in report.get("content_checks", []):
+            emoji = _VERDICT_EMOJI.get(check["verdict"], "❓")
+            st.markdown(f"- {emoji} **{check['name']}**: {check['score']}/100")
+            if check.get("suggestion"):
+                st.caption(f"  → {check['suggestion']}")
+
+    st.caption(f"토큰 사용: {report['tokens_used']}")
 
 
 # ── 팀 채팅 ──────────────────────────────────────────────
@@ -461,6 +512,48 @@ def _page_settings():
             "\n".join(f"{k}={v}" for k, v in env_dict.items()) + "\n"
         )
         st.success("설정 저장 완료. 서버를 재시작하세요.")
+
+    st.divider()
+    st.subheader("브랜드 가이드라인")
+    st.info(
+        "콘텐츠 품질 검증(QA)의 기준이 되는 브랜드 규칙입니다. "
+        "사용 가능한 템플릿 변수: `{{brand_name}}`, `{{brand_handle}}`, "
+        "`{{brand_topic}}`, `{{brand_description}}`, `{{brand_disclaimer}}`"
+    )
+
+    guide_data = _api_get("/api/brand-guidelines")
+    guide_text = guide_data["content"] if guide_data else ""
+
+    edited_guide = st.text_area(
+        "브랜드 가이드라인 (마크다운)",
+        value=guide_text,
+        height=400,
+        key="brand_guide_editor",
+    )
+
+    gcol1, gcol2 = st.columns(2)
+    with gcol1:
+        if st.button("가이드라인 저장"):
+            result = _api_post(
+                "/api/brand-guidelines",
+                json={"content": edited_guide},
+            )
+            if result:
+                st.success("브랜드 가이드라인이 저장되었습니다.")
+            else:
+                st.error("저장에 실패했습니다.")
+    with gcol2:
+        if st.button("기본값 복원"):
+            from src.services.review_service import get_default_brand_guidelines
+            default = get_default_brand_guidelines()
+            result = _api_post(
+                "/api/brand-guidelines",
+                json={"content": default},
+            )
+            if result:
+                st.success("기본 가이드라인으로 복원되었습니다. 페이지를 새로고침하세요.")
+            else:
+                st.error("복원에 실패했습니다.")
 
     st.divider()
     st.subheader("시스템 정보")

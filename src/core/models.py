@@ -207,6 +207,50 @@ class WorkflowExecution(BaseModel):
     total_tokens: int = 0
 
 
+# ── 품질 검증 ────────────────────────────────────────────────
+
+
+class ReviewVerdict(str, Enum):
+    """품질 검증 최종 판정."""
+
+    PASS = "pass"
+    WARN = "warn"
+    FAIL = "fail"
+
+
+class QualityCheck(BaseModel):
+    """개별 검증 항목 결과."""
+
+    check_id: str
+    category: str
+    name: str
+    verdict: ReviewVerdict
+    score: int = 0
+    detail: str = ""
+    suggestion: str = ""
+
+
+class QualityReport(BaseModel):
+    """2-Phase 품질 검증 통합 보고서."""
+
+    report_id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
+    content_preview: str = ""
+    agent_id: str = ""
+
+    brand_checks: list[QualityCheck] = Field(default_factory=list)
+    brand_score: int = 0
+    brand_verdict: ReviewVerdict = ReviewVerdict.PASS
+
+    content_checks: list[QualityCheck] = Field(default_factory=list)
+    content_score: int = 0
+    content_verdict: ReviewVerdict = ReviewVerdict.PASS
+
+    overall_score: int = 0
+    overall_verdict: ReviewVerdict = ReviewVerdict.PASS
+    tokens_used: int = 0
+    reviewed_at: datetime = Field(default_factory=datetime.now)
+
+
 # ── 채팅 ─────────────────────────────────────────────────────
 
 

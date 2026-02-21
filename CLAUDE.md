@@ -15,7 +15,7 @@
 contents_team/
 ├── agents/                      # 에이전트 프롬프트 (마크다운)
 │   ├── team1-branding/          #   브랜딩 전략팀 (2명)
-│   ├── team2-analysis/          #   콘텐츠 분석팀 (3명)
+│   ├── team2-analysis/          #   콘텐츠 분석팀 (5명: 트렌드헌터, 벤치마킹, 성과분석, 브랜드QA, 콘텐츠QA)
 │   ├── team3-reels/             #   릴스 제작팀 (4명)
 │   ├── team4-threads/           #   스레드 콘텐츠팀 (2명)
 │   ├── team5-fanding/           #   팬딩 멤버십팀 (4명)
@@ -29,6 +29,7 @@ contents_team/
 │   │   ├── agent_service.py     # 에이전트 로딩(캐시) + 실행
 │   │   ├── workflow_service.py  # 워크플로우 프리셋(팩토리) + 실행 엔진
 │   │   ├── chat_service.py      # 멀티 에이전트 팀 채팅 (인메모리)
+│   │   ├── review_service.py    # 2-Phase 품질 검증 (브랜드 준수 + 콘텐츠 품질)
 │   │   ├── output_service.py    # 산출물 조회 (storage 위임)
 │   │   └── storage.py           # StorageBackend ABC → FileStorage
 │   ├── api/
@@ -38,6 +39,7 @@ contents_team/
 │   └── gui/
 │       └── app.py               # Streamlit GUI
 ├── workflows/                   # 워크플로우 가이드 문서
+├── brand-guidelines.md          # 브랜드 가이드라인 (QA 기준, GUI에서 편집 가능)
 ├── outputs/                     # 생성된 산출물 (gitignored)
 ├── pyproject.toml               # uv 프로젝트 설정
 ├── .env / .env.example          # 환경 변수
@@ -88,6 +90,7 @@ Storage (src/services/storage.py)
 - **멀티 AI 프로바이더**: `clients.create_message()` 통일 인터페이스 → `AI_PROVIDER` 설정에 따라 Anthropic/OpenAI 자동 전환
 - **다국어 콘텐츠**: `CONTENT_LANGUAGE` 설정(`ko`/`ja`/`en`)에 따라 언어별 스타일 가이드가 시스템 프롬프트에 자동 주입. `models.py`의 `LANGUAGE_PROFILES` 단일 소스. `inject_language_guide()` 공유 헬퍼로 중복 제거
 - **팀 채팅**: `chat_service.py` — 멀티 에이전트 그룹 채팅. 순차 실행(각 에이전트가 이전 발언을 본 뒤 응답). 인메모리 휘발성, `_MAX_ROOMS=50`. 채팅 모델(`ChatRole`/`ChatMessage`/`ChatRoom`)은 `models.py` 단일 소스
+- **품질 검증 (QA)**: `review_service.py` — 2-Phase 자동 검증. Phase 1: 브랜드 가이드라인 준수(`brand-reviewer`), Phase 2: 콘텐츠 품질(`content-reviewer`). `brand-guidelines.md`에서 브랜드 규칙 로딩, `{{brand_*}}` 변수 치환 지원. GUI 설정에서 편집 가능
 - **버전 단일 소스**: `config.APP_VERSION` — routes.py, app.py 등에서 참조
 - **스토리지 추상화**: `StorageBackend` ABC → `FileStorage` (SaaS 전환 시 교체)
 - **파일명**: `YYYY-MM-DD-{agent_id}-{HHMMSSffffff}[-suffix].md` (마이크로초 포함, 중복 방지)
@@ -109,6 +112,10 @@ Storage (src/services/storage.py)
 | GET | `/api/chat/rooms/{id}` | 채팅 방 조회 |
 | POST | `/api/chat/rooms/{id}/messages` | 사용자 메시지 전송 |
 | POST | `/api/chat/rooms/{id}/round` | 에이전트 토론 라운드 |
+| POST | `/api/review` | 콘텐츠 품질 검증 (standalone) |
+| POST | `/api/review/output` | 기존 산출물 품질 검증 |
+| GET | `/api/brand-guidelines` | 브랜드 가이드라인 조회 |
+| POST | `/api/brand-guidelines` | 브랜드 가이드라인 저장 |
 
 ## Agent Prompt Format
 

@@ -195,3 +195,55 @@ class ChatRoundResponse(BaseModel):
     round_number: int
     messages: list[ChatMessageResponse]
     total_tokens: int = 0
+
+
+# ── 요청: 품질 검증 ──────────────────────────────────────────
+
+
+class ReviewContentRequest(BaseModel):
+    content: str
+    agent_id: str = ""
+    channel_hint: str = ""
+
+
+class ReviewOutputRequest(BaseModel):
+    team: str
+    filename: str
+
+
+class BrandGuidelinesRequest(BaseModel):
+    content: str
+
+
+# ── 응답: 품질 검증 ──────────────────────────────────────────
+
+
+class QualityCheckResponse(BaseModel):
+    check_id: str
+    category: str
+    name: str
+    verdict: str
+    score: int
+    detail: str
+    suggestion: str
+
+
+class QualityReportResponse(BaseModel):
+    report_id: str
+    content_preview: str
+    agent_id: str
+    brand_checks: list[QualityCheckResponse]
+    brand_score: int
+    brand_verdict: str
+    content_checks: list[QualityCheckResponse]
+    content_score: int
+    content_verdict: str
+    overall_score: int
+    overall_verdict: str
+    tokens_used: int
+    reviewed_at: str
+
+
+class BrandGuidelinesResponse(BaseModel):
+    content: str
+    last_modified: str
