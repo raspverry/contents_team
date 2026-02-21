@@ -9,6 +9,8 @@ from pydantic_settings import BaseSettings
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+APP_VERSION = "0.4.0"
+
 AGENTS_DIR = BASE_DIR / "agents"
 OUTPUTS_DIR = BASE_DIR / "outputs"
 WORKFLOWS_DIR = BASE_DIR / "workflows"

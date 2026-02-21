@@ -3,7 +3,8 @@
 import httpx
 import streamlit as st
 
-from src.core.config import settings
+from src.core.config import APP_VERSION, settings
+from src.core.models import TEAM_META, TeamType
 
 st.set_page_config(
     page_title="재테크는 스크루지 — AI 콘텐츠 팀",
@@ -78,16 +79,20 @@ def _page_dashboard():
     st.divider()
 
     st.subheader("📋 조직 구조")
-    st.code(
-        "대표: 재테크는 스크루지 (전체 방향 지시 & 최종 승인)\n"
-        "│\n"
-        "├── 🎯 브랜딩 전략팀 (2명)   — 브랜드 전략가, 포지셔닝 분석가\n"
-        "├── 🔍 콘텐츠 분석팀 (3명)   — 트렌드 헌터, 벤치마킹 분석가, 성과 분석가\n"
-        "├── 🎬 릴스 제작팀 (4명)     — 기획자, 대본 작가, 캡션&DM 작가, 편집 가이드\n"
-        "├── 🧵 스레드 콘텐츠팀 (2명) — 기획자, 작가\n"
-        "└── 🎙 팬딩 멤버십팀 (4명)   — 전략가, 컬럼니스트, 브리퍼, ETF 리서처",
-        language=None,
-    )
+    agents_list = _api_get("/api/agents")
+    if agents_list:
+        teams_grouped: dict[str, list] = {}
+        for a in agents_list:
+            teams_grouped.setdefault(a["team_display"], []).append(a)
+
+        lines = [f"대표: {settings.brand_name} (전체 방향 지시 & 최종 승인)", "│"]
+        team_items = list(teams_grouped.items())
+        for i, (team_name, team_agents) in enumerate(team_items):
+            connector = "└──" if i == len(team_items) - 1 else "├──"
+            agent_names = ", ".join(a["name"] for a in team_agents)
+            lines.append(f"{connector} {team_name} ({len(team_agents)}명)   — {agent_names}")
+
+        st.code("\n".join(lines), language=None)
 
     st.subheader("⚡ 빠른 실행")
     col1, col2, col3 = st.columns(3)
@@ -268,12 +273,7 @@ def _page_outputs():
 # ── 팀 채팅 ──────────────────────────────────────────────
 
 _TEAM_EMOJI: dict[str, str] = {
-    "team1-branding": "🎯",
-    "team2-analysis": "🔍",
-    "team3-reels": "🎬",
-    "team4-threads": "🧵",
-    "team5-fanding": "🎙",
-    "team6-cardnews": "🎨",
+    team.value: team.display_name[0] for team in TeamType
 }
 
 
@@ -465,10 +465,10 @@ def _page_settings():
     st.divider()
     st.subheader("시스템 정보")
     st.json({
-        "version": "0.2.0",
+        "version": APP_VERSION,
         "backend": "FastAPI",
         "frontend": "Streamlit",
-        "ai_model": "Anthropic Claude",
+        "ai_provider": settings.ai_provider,
         "package_manager": "uv",
     })
 

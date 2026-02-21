@@ -15,7 +15,7 @@ import openai
 
 from src.core.clients import create_message
 from src.core.config import AGENTS_DIR, settings
-from src.core.models import AgentInfo, AgentRunResult, RunStatus, TeamType, get_language_profile
+from src.core.models import AgentInfo, AgentRunResult, RunStatus, TeamType, get_language_profile, inject_language_guide
 from src.services.storage import get_storage
 
 
@@ -134,10 +134,7 @@ async def run_agent(
     )
 
     # 시스템 프롬프트 조합
-    lang = get_language_profile(settings.content_language)
-    system = agent.system_prompt
-    if lang.code != "ko":
-        system += f"\n\n## 콘텐츠 언어\n{lang.instruction}\n\n{lang.style_guide}"
+    system = inject_language_guide(agent.system_prompt, settings.content_language)
     if context:
         system += f"\n\n## 참고 컨텍스트\n{context}"
 

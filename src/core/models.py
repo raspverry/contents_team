@@ -5,10 +5,10 @@
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -81,6 +81,14 @@ LANGUAGE_PROFILES: dict[str, LanguageProfile] = {
 def get_language_profile(code: str) -> LanguageProfile:
     """언어 코드로 프로필 조회. 미지원 언어는 ko 폴백."""
     return LANGUAGE_PROFILES.get(code, LANGUAGE_PROFILES["ko"])
+
+
+def inject_language_guide(system_prompt: str, content_language: str = "ko") -> str:
+    """비한국어 환경에서 시스템 프롬프트에 언어 가이드를 주입."""
+    lang = get_language_profile(content_language)
+    if lang.code == "ko":
+        return system_prompt
+    return system_prompt + f"\n\n## 콘텐츠 언어\n{lang.instruction}\n\n{lang.style_guide}"
 
 
 # ── 팀 메타데이터 (단일 소스) ────────────────────────────────
@@ -197,3 +205,37 @@ class WorkflowExecution(BaseModel):
     step_count: int = 0
     completed_steps: int = 0
     total_tokens: int = 0
+
+
+# ── 채팅 ─────────────────────────────────────────────────────
+
+
+class ChatRole(str, Enum):
+    USER = "user"
+    AGENT = "agent"
+    SYSTEM = "system"
+
+
+class ChatMessage(BaseModel):
+    """채팅 메시지 한 건."""
+
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
+    role: ChatRole
+    agent_id: str = ""
+    agent_name: str = ""
+    team: str = ""
+    content: str
+    tokens_used: int = 0
+    created_at: datetime = Field(default_factory=datetime.now)
+
+
+class ChatRoom(BaseModel):
+    """채팅 방."""
+
+    room_id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
+    topic: str
+    agent_ids: list[str]
+    messages: list[ChatMessage] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=datetime.now)
+    total_tokens: int = 0
+    round_count: int = 0

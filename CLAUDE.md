@@ -22,8 +22,8 @@ contents_team/
 │   └── team6-cardnews/          #   카드뉴스 제작팀 (5명)
 ├── src/
 │   ├── core/
-│   │   ├── config.py            # Settings (pydantic-settings), 경로 상수
-│   │   ├── models.py            # 도메인 모델: TeamType, AgentInfo, Workflow 등
+│   │   ├── config.py            # Settings (pydantic-settings), 경로 상수, APP_VERSION
+│   │   ├── models.py            # 도메인 모델: TeamType, AgentInfo, Workflow, Chat 등
 │   │   └── clients.py           # AI 클라이언트 추상화 (Anthropic/OpenAI)
 │   ├── services/
 │   │   ├── agent_service.py     # 에이전트 로딩(캐시) + 실행
@@ -86,8 +86,9 @@ Storage (src/services/storage.py)
 - **워크플로우 팩토리**: `workflow_service.PRESET_FACTORIES` — `date.today()`가 실행 시점에 평가되도록 팩토리 함수 사용
 - **워크플로우 실행**: DAG 기반 의존성 해결, `asyncio.gather`로 병렬 실행, step index 추적 (동일 에이전트 복수 실행 안전)
 - **멀티 AI 프로바이더**: `clients.create_message()` 통일 인터페이스 → `AI_PROVIDER` 설정에 따라 Anthropic/OpenAI 자동 전환
-- **다국어 콘텐츠**: `CONTENT_LANGUAGE` 설정(`ko`/`ja`/`en`)에 따라 언어별 스타일 가이드가 시스템 프롬프트에 자동 주입. `models.py`의 `LANGUAGE_PROFILES` 단일 소스
-- **팀 채팅**: `chat_service.py` — 멀티 에이전트 그룹 채팅. 순차 실행(각 에이전트가 이전 발언을 본 뒤 응답). 인메모리 휘발성, `_MAX_ROOMS=50`
+- **다국어 콘텐츠**: `CONTENT_LANGUAGE` 설정(`ko`/`ja`/`en`)에 따라 언어별 스타일 가이드가 시스템 프롬프트에 자동 주입. `models.py`의 `LANGUAGE_PROFILES` 단일 소스. `inject_language_guide()` 공유 헬퍼로 중복 제거
+- **팀 채팅**: `chat_service.py` — 멀티 에이전트 그룹 채팅. 순차 실행(각 에이전트가 이전 발언을 본 뒤 응답). 인메모리 휘발성, `_MAX_ROOMS=50`. 채팅 모델(`ChatRole`/`ChatMessage`/`ChatRoom`)은 `models.py` 단일 소스
+- **버전 단일 소스**: `config.APP_VERSION` — routes.py, app.py 등에서 참조
 - **스토리지 추상화**: `StorageBackend` ABC → `FileStorage` (SaaS 전환 시 교체)
 - **파일명**: `YYYY-MM-DD-{agent_id}-{HHMMSSffffff}[-suffix].md` (마이크로초 포함, 중복 방지)
 - **경로 보안**: `FileStorage.load()`에서 path traversal 방지

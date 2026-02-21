@@ -10,6 +10,9 @@ from __future__ import annotations
 import json
 import re
 
+from src.core.config import settings
+from src.core.models import get_language_profile
+
 
 def extract_json_from_markdown(md: str) -> dict | None:
     """마크다운 내 JSON 코드블록에서 content.json을 추출.
@@ -105,11 +108,18 @@ def markdown_to_cards(md: str, *, theme_id: str = "") -> dict:
 
     _flush_card()
 
-    # CTA 카드 추가
+    # CTA 카드 추가 (언어별 동적 생성)
+    lang = get_language_profile(settings.content_language)
+    cta_templates = {
+        "ko": f"팔로우하고 더 많은 {settings.brand_topic} 팁 받기",
+        "ja": f"フォローして{settings.brand_topic}のヒントをもっと受け取る",
+        "en": f"Follow for more {settings.brand_topic} tips",
+    }
+    cta_text = cta_templates.get(lang.code, cta_templates["ko"])
     cards.append({
         "page": page,
         "frame": "cta",
-        "blocks": [{"type": "cta", "data": {"text": "팔로우하고 더 많은 재테크 팁 받기"}}],
+        "blocks": [{"type": "cta", "data": {"text": cta_text}}],
     })
 
     return {"cards": cards}

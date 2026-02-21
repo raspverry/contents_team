@@ -6,50 +6,10 @@
 
 from __future__ import annotations
 
-import uuid
-from datetime import datetime
-from enum import Enum
-
-from pydantic import BaseModel, Field
-
 from src.core.clients import create_message
 from src.core.config import settings
-from src.core.models import TeamType, get_language_profile
+from src.core.models import ChatMessage, ChatRole, ChatRoom, inject_language_guide
 from src.services.agent_service import load_all_agents
-
-
-# ── 채팅 모델 ────────────────────────────────────────────────
-
-
-class ChatRole(str, Enum):
-    USER = "user"
-    AGENT = "agent"
-    SYSTEM = "system"
-
-
-class ChatMessage(BaseModel):
-    """채팅 메시지 한 건."""
-
-    id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
-    role: ChatRole
-    agent_id: str = ""
-    agent_name: str = ""
-    team: str = ""
-    content: str
-    tokens_used: int = 0
-    created_at: datetime = Field(default_factory=datetime.now)
-
-
-class ChatRoom(BaseModel):
-    """채팅 방."""
-
-    room_id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
-    topic: str
-    agent_ids: list[str]
-    messages: list[ChatMessage] = Field(default_factory=list)
-    created_at: datetime = Field(default_factory=datetime.now)
-    total_tokens: int = 0
-    round_count: int = 0
 
 
 # ── 인메모리 저장소 ──────────────────────────────────────────
@@ -117,7 +77,6 @@ async def run_chat_round(room_id: str) -> list[ChatMessage]:
         raise KeyError(f"채팅 방 '{room_id}'를 찾을 수 없습니다")
 
     agents = load_all_agents()
-    lang = get_language_profile(settings.content_language)
     round_messages: list[ChatMessage] = []
 
     for agent_id in room.agent_ids:
@@ -129,9 +88,7 @@ async def run_chat_round(room_id: str) -> list[ChatMessage]:
         conversation = _build_conversation_context(room)
 
         # 시스템 프롬프트: 에이전트 페르소나 + 언어 가이드 + 채팅 지시
-        system = agent.system_prompt
-        if lang.code != "ko":
-            system += f"\n\n## 콘텐츠 언어\n{lang.instruction}\n\n{lang.style_guide}"
+        system = inject_language_guide(agent.system_prompt, settings.content_language)
         system += (
             f"\n\n## 그룹 채팅 컨텍스트"
             f"\n당신은 '{room.topic}' 주제의 그룹 채팅에 참여 중입니다."

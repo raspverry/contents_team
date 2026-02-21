@@ -36,14 +36,14 @@ from src.api.schemas import (
     WorkflowStepSummary,
     WorkflowSummary,
 )
-from src.core.config import settings
+from src.core.config import APP_VERSION, settings
 from src.core.models import TeamType
 from src.services import agent_service, chat_service, output_service, rendering_service, workflow_service
 
 app = FastAPI(
     title=f"{settings.brand_name} — AI 콘텐츠 팀",
     description="20명의 AI 에이전트가 콘텐츠를 생산하는 1인 회사 운영 시스템",
-    version="0.4.0",
+    version=APP_VERSION,
 )
 
 

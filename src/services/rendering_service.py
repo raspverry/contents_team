@@ -14,11 +14,10 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
-from src.core.config import BASE_DIR, settings
+from src.core.config import BASE_DIR, OUTPUTS_DIR, settings
 
 
 RENDERING_DIR = BASE_DIR / "rendering"
-OUTPUT_DIR = BASE_DIR / "outputs"
 
 # 기본 테마 (rendering/src/theme.ts 의 DEFAULT_*_THEME 과 동기)
 _DEFAULT_CARDNEWS_THEME = {
@@ -126,7 +125,7 @@ async def render_cardnews_stills(
     cards = content_json.get("cards", [])
     theme = content_json.get("theme", _DEFAULT_CARDNEWS_THEME)
 
-    out_dir = OUTPUT_DIR / output_subdir
+    out_dir = OUTPUTS_DIR / output_subdir
     out_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
 
@@ -153,7 +152,7 @@ async def render_cardnews_video(
     cards = content_json.get("cards", [])
     theme = content_json.get("theme", _DEFAULT_CARDNEWS_THEME)
 
-    out_dir = OUTPUT_DIR / output_subdir
+    out_dir = OUTPUTS_DIR / output_subdir
     out_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     output_path = out_dir / f"cardnews-{timestamp}.mp4"
@@ -181,7 +180,7 @@ async def render_reels(
     brand_name: str = "",
 ) -> RenderResult:
     """릴스 영상(MP4)을 렌더링."""
-    out_dir = OUTPUT_DIR / output_subdir
+    out_dir = OUTPUTS_DIR / output_subdir
     out_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     output_path = out_dir / f"reels-{timestamp}.mp4"
