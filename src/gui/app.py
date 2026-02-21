@@ -44,13 +44,14 @@ def main():
 
     page = st.sidebar.radio(
         "메뉴",
-        ["🏠 대시보드", "🤖 에이전트", "⚡ 워크플로우", "📝 산출물", "⚙️ 설정"],
+        ["🏠 대시보드", "🤖 에이전트", "⚡ 워크플로우", "💬 팀 채팅", "📝 산출물", "⚙️ 설정"],
     )
 
     pages = {
         "🏠 대시보드": _page_dashboard,
         "🤖 에이전트": _page_agents,
         "⚡ 워크플로우": _page_workflows,
+        "💬 팀 채팅": _page_chat,
         "📝 산출물": _page_outputs,
         "⚙️ 설정": _page_settings,
     }
@@ -262,6 +263,162 @@ def _page_outputs():
                 st.markdown(data["content"])
             else:
                 st.error("파일을 불러올 수 없습니다.")
+
+
+# ── 팀 채팅 ──────────────────────────────────────────────
+
+_TEAM_EMOJI: dict[str, str] = {
+    "team1-branding": "🎯",
+    "team2-analysis": "🔍",
+    "team3-reels": "🎬",
+    "team4-threads": "🧵",
+    "team5-fanding": "🎙",
+    "team6-cardnews": "🎨",
+}
+
+
+def _page_chat():
+    st.title("💬 팀 채팅")
+
+    if "chat_room_id" not in st.session_state:
+        st.session_state["chat_room_id"] = None
+    if "chat_messages" not in st.session_state:
+        st.session_state["chat_messages"] = []
+
+    if st.session_state["chat_room_id"] is None:
+        _chat_setup()
+    else:
+        _chat_conversation()
+
+
+def _chat_setup():
+    """채팅방 생성 UI."""
+    st.markdown("에이전트들을 모아 주제에 대해 토론시키고, 직접 대화에 참여하세요.")
+    st.divider()
+
+    agents = _api_get("/api/agents")
+    if not agents:
+        _show_api_error()
+        return
+
+    # 팀별 그룹핑
+    teams: dict[str, list] = {}
+    for a in agents:
+        teams.setdefault(a["team_display"], []).append(a)
+
+    st.subheader("참여 에이전트 선택")
+
+    selected_ids: list[str] = []
+    for team_name, team_agents in teams.items():
+        st.caption(team_name)
+        cols = st.columns(min(len(team_agents), 4))
+        for i, agent in enumerate(team_agents):
+            with cols[i % len(cols)]:
+                if st.checkbox(agent["name"], key=f"chat_sel_{agent['id']}"):
+                    selected_ids.append(agent["id"])
+
+    st.divider()
+    topic = st.text_input(
+        "토론 주제",
+        placeholder="예: 이번 주 콘텐츠 전략을 어떻게 가져갈까?",
+    )
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.caption(f"선택된 에이전트: {len(selected_ids)}명")
+    with col2:
+        if st.button(
+            "채팅방 만들기",
+            use_container_width=True,
+            disabled=not (selected_ids and topic),
+        ):
+            result = _api_post(
+                "/api/chat/rooms",
+                json={"agent_ids": selected_ids, "topic": topic},
+            )
+            if result and "room_id" in result:
+                st.session_state["chat_room_id"] = result["room_id"]
+                st.session_state["chat_messages"] = result.get("messages", [])
+                st.rerun()
+            else:
+                st.error("채팅방 생성 실패. API 서버를 확인하세요.")
+
+
+def _chat_conversation():
+    """채팅 대화 UI."""
+    room_id = st.session_state["chat_room_id"]
+
+    # 상단 바
+    col_title, col_exit = st.columns([5, 1])
+    with col_exit:
+        if st.button("나가기", use_container_width=True):
+            st.session_state["chat_room_id"] = None
+            st.session_state["chat_messages"] = []
+            st.rerun()
+
+    # 메시지 표시
+    messages = st.session_state["chat_messages"]
+    for msg in messages:
+        role = msg["role"]
+        if role == "system":
+            st.info(msg["content"])
+        elif role == "user":
+            with st.chat_message("user"):
+                st.markdown(msg["content"])
+        elif role == "agent":
+            team = msg.get("team", "")
+            emoji = _TEAM_EMOJI.get(team, "🤖")
+            agent_name = msg.get("agent_name", "에이전트")
+            with st.chat_message(name=agent_name, avatar=emoji):
+                st.caption(msg.get("team_display", ""))
+                st.markdown(msg["content"])
+                if msg.get("tokens_used"):
+                    st.caption(f"토큰: {msg['tokens_used']}")
+
+    st.divider()
+
+    # 하단 입력
+    col_input, col_send, col_round = st.columns([5, 1, 1])
+
+    with col_input:
+        user_input = st.text_input(
+            "메시지",
+            key="chat_user_input",
+            placeholder="에이전트들에게 메시지를 보내세요...",
+            label_visibility="collapsed",
+        )
+
+    with col_send:
+        send_clicked = st.button("전송", use_container_width=True)
+
+    with col_round:
+        round_clicked = st.button("토론", use_container_width=True)
+
+    # 사용자 메시지 전송
+    if send_clicked and user_input:
+        result = _api_post(
+            f"/api/chat/rooms/{room_id}/messages",
+            json={"content": user_input},
+        )
+        if result:
+            st.session_state["chat_messages"].append(result)
+            st.rerun()
+
+    # 에이전트 라운드 실행
+    if round_clicked:
+        with st.spinner("에이전트들이 대화 중..."):
+            result = _api_post(
+                f"/api/chat/rooms/{room_id}/round",
+                timeout=300,
+            )
+        if result is None:
+            st.error("요청 실패. API 서버를 확인하세요.")
+        elif "error" in result:
+            st.error(result["error"])
+        else:
+            for msg in result.get("messages", []):
+                st.session_state["chat_messages"].append(msg)
+            st.rerun()
 
 
 # ── 설정 ─────────────────────────────────────────────────────

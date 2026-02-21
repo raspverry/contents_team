@@ -28,6 +28,7 @@ contents_team/
 │   ├── services/
 │   │   ├── agent_service.py     # 에이전트 로딩(캐시) + 실행
 │   │   ├── workflow_service.py  # 워크플로우 프리셋(팩토리) + 실행 엔진
+│   │   ├── chat_service.py      # 멀티 에이전트 팀 채팅 (인메모리)
 │   │   ├── output_service.py    # 산출물 조회 (storage 위임)
 │   │   └── storage.py           # StorageBackend ABC → FileStorage
 │   ├── api/
@@ -86,6 +87,7 @@ Storage (src/services/storage.py)
 - **워크플로우 실행**: DAG 기반 의존성 해결, `asyncio.gather`로 병렬 실행, step index 추적 (동일 에이전트 복수 실행 안전)
 - **멀티 AI 프로바이더**: `clients.create_message()` 통일 인터페이스 → `AI_PROVIDER` 설정에 따라 Anthropic/OpenAI 자동 전환
 - **다국어 콘텐츠**: `CONTENT_LANGUAGE` 설정(`ko`/`ja`/`en`)에 따라 언어별 스타일 가이드가 시스템 프롬프트에 자동 주입. `models.py`의 `LANGUAGE_PROFILES` 단일 소스
+- **팀 채팅**: `chat_service.py` — 멀티 에이전트 그룹 채팅. 순차 실행(각 에이전트가 이전 발언을 본 뒤 응답). 인메모리 휘발성, `_MAX_ROOMS=50`
 - **스토리지 추상화**: `StorageBackend` ABC → `FileStorage` (SaaS 전환 시 교체)
 - **파일명**: `YYYY-MM-DD-{agent_id}-{HHMMSSffffff}[-suffix].md` (마이크로초 포함, 중복 방지)
 - **경로 보안**: `FileStorage.load()`에서 path traversal 방지
@@ -102,6 +104,10 @@ Storage (src/services/storage.py)
 | POST | `/api/workflows/{id}/run` | 워크플로우 실행 |
 | GET | `/api/outputs` | 산출물 목록 |
 | GET | `/api/outputs/{team}/{filename}` | 산출물 내용 |
+| POST | `/api/chat/rooms` | 채팅 방 생성 |
+| GET | `/api/chat/rooms/{id}` | 채팅 방 조회 |
+| POST | `/api/chat/rooms/{id}/messages` | 사용자 메시지 전송 |
+| POST | `/api/chat/rooms/{id}/round` | 에이전트 토론 라운드 |
 
 ## Agent Prompt Format
 

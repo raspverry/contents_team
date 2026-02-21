@@ -16,6 +16,10 @@ from src.api.schemas import (
     AgentDetail,
     AgentRunResponse,
     AgentSummary,
+    ChatMessageResponse,
+    ChatRoomResponse,
+    ChatRoundResponse,
+    CreateChatRoomRequest,
     ErrorResponse,
     OutputContent,
     OutputSummary,
@@ -24,6 +28,7 @@ from src.api.schemas import (
     RenderReelsRequest,
     RenderResultResponse,
     RunAgentRequest,
+    SendChatMessageRequest,
     StatusResponse,
     ThemePresetResponse,
     WorkflowExecutionSummary,
@@ -32,7 +37,8 @@ from src.api.schemas import (
     WorkflowSummary,
 )
 from src.core.config import settings
-from src.services import agent_service, output_service, rendering_service, workflow_service
+from src.core.models import TeamType
+from src.services import agent_service, chat_service, output_service, rendering_service, workflow_service
 
 app = FastAPI(
     title=f"{settings.brand_name} — AI 콘텐츠 팀",
@@ -328,3 +334,97 @@ def list_themes():
             colors=theme,
         ))
     return result
+
+
+# ── 팀 채팅 ──────────────────────────────────────────────────
+
+
+def _chat_msg_to_response(msg: chat_service.ChatMessage) -> ChatMessageResponse:
+    """ChatMessage → API 응답 스키마 변환."""
+    team_display = ""
+    if msg.team:
+        try:
+            team_display = TeamType(msg.team).display_name
+        except ValueError:
+            team_display = msg.team
+    return ChatMessageResponse(
+        id=msg.id,
+        role=msg.role.value,
+        agent_id=msg.agent_id,
+        agent_name=msg.agent_name,
+        team=msg.team,
+        team_display=team_display,
+        content=msg.content,
+        tokens_used=msg.tokens_used,
+        created_at=msg.created_at.isoformat(),
+    )
+
+
+@app.post("/api/chat/rooms", response_model=ChatRoomResponse)
+def create_chat_room(req: CreateChatRoomRequest):
+    """채팅 방 생성."""
+    try:
+        room = chat_service.create_room(req.agent_ids, req.topic)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+    return ChatRoomResponse(
+        room_id=room.room_id,
+        topic=room.topic,
+        agent_ids=room.agent_ids,
+        messages=[_chat_msg_to_response(m) for m in room.messages],
+        total_tokens=room.total_tokens,
+        round_count=room.round_count,
+        created_at=room.created_at.isoformat(),
+    )
+
+
+@app.get("/api/chat/rooms/{room_id}", response_model=ChatRoomResponse)
+def get_chat_room(room_id: str):
+    """채팅 방 조회 (전체 이력 포함)."""
+    room = chat_service.get_room(room_id)
+    if not room:
+        raise HTTPException(404, f"채팅 방 '{room_id}'를 찾을 수 없습니다")
+
+    return ChatRoomResponse(
+        room_id=room.room_id,
+        topic=room.topic,
+        agent_ids=room.agent_ids,
+        messages=[_chat_msg_to_response(m) for m in room.messages],
+        total_tokens=room.total_tokens,
+        round_count=room.round_count,
+        created_at=room.created_at.isoformat(),
+    )
+
+
+@app.post("/api/chat/rooms/{room_id}/messages", response_model=ChatMessageResponse)
+def send_chat_message(room_id: str, req: SendChatMessageRequest):
+    """사용자 메시지 전송."""
+    try:
+        msg = chat_service.add_user_message(room_id, req.content)
+    except KeyError as e:
+        raise HTTPException(404, str(e))
+
+    return _chat_msg_to_response(msg)
+
+
+@app.post("/api/chat/rooms/{room_id}/round", response_model=ChatRoundResponse)
+async def run_chat_round(room_id: str):
+    """에이전트 라운드 1회 실행. 모든 에이전트가 순서대로 1번씩 발언."""
+    _check_rate("chat_round")
+
+    room = chat_service.get_room(room_id)
+    if not room:
+        raise HTTPException(404, f"채팅 방 '{room_id}'를 찾을 수 없습니다")
+
+    try:
+        round_messages = await chat_service.run_chat_round(room_id)
+    except KeyError as e:
+        raise HTTPException(404, str(e))
+
+    return ChatRoundResponse(
+        room_id=room_id,
+        round_number=room.round_count,
+        messages=[_chat_msg_to_response(m) for m in round_messages],
+        total_tokens=sum(m.tokens_used for m in round_messages),
+    )

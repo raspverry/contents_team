@@ -151,3 +151,47 @@ class ThemePresetResponse(BaseModel):
     description: str
     category: str
     colors: dict[str, str]
+
+
+# ── 요청: 채팅 ─────────────────────────────────────────────
+
+
+class CreateChatRoomRequest(BaseModel):
+    agent_ids: list[str]
+    topic: str
+
+
+class SendChatMessageRequest(BaseModel):
+    content: str
+
+
+# ── 응답: 채팅 ─────────────────────────────────────────────
+
+
+class ChatMessageResponse(BaseModel):
+    id: str
+    role: str
+    agent_id: str = ""
+    agent_name: str = ""
+    team: str = ""
+    team_display: str = ""
+    content: str
+    tokens_used: int = 0
+    created_at: str
+
+
+class ChatRoomResponse(BaseModel):
+    room_id: str
+    topic: str
+    agent_ids: list[str]
+    messages: list[ChatMessageResponse]
+    total_tokens: int = 0
+    round_count: int = 0
+    created_at: str
+
+
+class ChatRoundResponse(BaseModel):
+    room_id: str
+    round_number: int
+    messages: list[ChatMessageResponse]
+    total_tokens: int = 0
